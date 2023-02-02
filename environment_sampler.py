@@ -3,6 +3,7 @@ from configparser import ConfigParser
 
 from utils import AdbHelper
 from Intent import Intent, Actions
+import time
 
 
 class EnvironmentSampler(object):
@@ -11,7 +12,7 @@ class EnvironmentSampler(object):
         samplercfg = cfg['SAMPLER']
         self.apkloc = samplercfg.get('samplerapkloc')
         self.samplerpkg = samplercfg.get('samplerpkg')
-        self.wait_timer = samplercfg.get('samplerwaittimer')
+        self.wait_timer = samplercfg.getfloat('samplerwaittimer')
         self.reinstall = samplercfg.getboolean('reinstall')
         self.devicefiledir = samplercfg.get('devicefiledir')
         self.shellfiledir = samplercfg.get('shellfiledir')
@@ -39,11 +40,21 @@ class EnvironmentSampler(object):
     def start_file_log(self):
         filepath = 'file://'+self.devicefiledir + self.outfilename
         intent = Intent(action=Actions.WRITEFILE, uri=filepath)
-        return self.send_intent(intent)
+        result = self.send_intent(intent)
+        if result:
+            time.sleep(self.wait_timer)
+            return True
+        else:
+            return False
 
     def stop_file_log(self):
         intent = Intent(action=Actions.STOPFILE)
-        return self.send_intent(intent)
+        if self.send_intent(intent):
+            #let's sleep here to give it some time to flush the filewriter :)
+            time.sleep(0.5)
+            return True
+        else:
+            return False
 
     def start_logcat_log(self):
         return self.send_intent(Intent(action=Actions.WRITELOGCAT))
