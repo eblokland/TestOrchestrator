@@ -5,6 +5,8 @@ from utils import AdbHelper
 from configparser import ConfigParser
 from Intent import Intent, Actions, ExtraTypes, Extra
 from app_profiler import AppProfiler
+from environment_sampler import EnvironmentSampler
+import time
 
 # Press ⌃R to execute it or replace it with your code.
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
@@ -71,8 +73,17 @@ if __name__ == '__main__':
     cfg = ConfigParser()
     cfg.read('config.ini')
     args = simpleperfCmdBuilder(cfg)
-    profiler = AppProfiler(args)
-    profiler.profile()
+    #profiler = AppProfiler(args)
+    #profiler.profile()
+    samp = EnvironmentSampler(cfg)
+    if not samp.check_installed():
+        samp.install_pkg()
+    if not samp.start_file_log():
+        raise Exception('failed to start logger')
+    time.sleep(10)
+    samp.stop_file_log()
+    samp.pull_log()
+
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
 

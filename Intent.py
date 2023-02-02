@@ -48,6 +48,8 @@ class Intent(object):
             self.action = action
         elif isinstance(action, Actions):
             self.action = action.value
+        else:
+            raise ValueError('invalid input for action')
         self.uri = uri
         self.extras = extras
 
@@ -66,18 +68,21 @@ class Intent(object):
         self.activity = activity
 
     def getCmdStr(self):
-        str = 'am start-service'
-        if self.action is not None:
+        str = 'am start-foreground-service'
+        if self.action:
             str += ' '
             str += '-a "' + self.action + '"'
-        if self.uri is not None:
+        if self.uri:
             str += ' '
-            str += '-d "' + self.uri +'"'
-        if self.extras is not None:
+            str += '-d "' + self.uri + '"'
+        if self.extras:
             for e in self.extras:
                 if isinstance(e, Extra):
                     str += ' '
                     str += e.getStr()
         str += ' "'
-        str += self.activity +'"'
+        str += self.activity + '"'
         return str
+
+    def getArgs(self):
+        return self.getCmdStr().split()
