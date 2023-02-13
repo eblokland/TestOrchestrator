@@ -1,14 +1,52 @@
 import os
 from configparser import ConfigParser
 
-from utils import AdbHelper
+from simpleperf_utils import AdbHelper
 from Intent import Intent, Actions
 import time
+
+
+class CommandLineSampler(object):
+    def __init__(self):
+        self.adbhelper = AdbHelper(enable_switch_to_root=False)
+
+    def send_intent(self, intent: Intent):
+        return self.adbhelper.run(adb_args=['shell'] + intent.getArgs())
+
+    def start_logcat_log(self):
+        return self.send_intent(Intent(action=Actions.WRITELOGCAT))
+
+    def stop_logcat_log(self):
+        return self.send_intent(Intent(action=Actions.STOPLOGCAT))
+
+    def start_file_log(self,outfilename='log.txt', devicefiledir='/mnt/sdcard/logs/'):
+        filepath = 'file://'+devicefiledir + outfilename
+        intent = Intent(action=Actions.WRITEFILE, uri=filepath)
+        result = self.send_intent(intent)
+        if result:
+            return True
+        else:
+            return False
+
+    def stop_file_log(self):
+        intent = Intent(action=Actions.STOPFILE)
+        if self.send_intent(intent):
+            #let's sleep here to give it some time to flush the filewriter :)
+            time.sleep(0.5)
+            return True
+        else:
+            return False
+
+    def pull_file(self, outfilename='log.txt', filedir='/sdcard/logs/', localname='log.txt', localpath='./'):
+        filepath = filedir + outfilename
+        localpath = localpath + localname
+        self.adbhelper.run(['pull', filepath, localpath])
 
 
 class EnvironmentSampler(object):
     def __init__(self, cfg: ConfigParser):
         self.adbhelper = AdbHelper(enable_switch_to_root=False)
+        config = cfg['CONFIG']
         samplercfg = cfg['SAMPLER']
         self.apkloc = samplercfg.get('samplerapkloc')
         self.samplerpkg = samplercfg.get('samplerpkg')
@@ -16,7 +54,7 @@ class EnvironmentSampler(object):
         self.reinstall = samplercfg.getboolean('reinstall')
         self.devicefiledir = samplercfg.get('devicefiledir')
         self.shellfiledir = samplercfg.get('shellfiledir')
-        self.outfilename = samplercfg.get('outfilename')
+        self.outfilename = config.get('outfilename')
         self.localpath = samplercfg.get('samplerlogoutputpath')
 
     def check_installed(self):
@@ -38,7 +76,7 @@ class EnvironmentSampler(object):
         return self.adbhelper.run(adb_args=['shell']+intent.getArgs())
 
     def start_file_log(self):
-        filepath = 'file://'+self.devicefiledir + self.outfilename
+        filepath = 'file://'+self.devicefiledir + self.outfilename + '.txt'
         intent = Intent(action=Actions.WRITEFILE, uri=filepath)
         result = self.send_intent(intent)
         if result:
@@ -63,5 +101,5 @@ class EnvironmentSampler(object):
         return self.send_intent(Intent(action=Actions.STOPLOGCAT))
 
     def pull_log(self):
-        args = ['pull', self.shellfiledir+self.outfilename, self.localpath]
+        args = ['pull', self.shellfiledir+self.outfilename+'.txt', self.localpath]
         return self.adbhelper.run(adb_args=args)

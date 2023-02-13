@@ -86,3 +86,5 @@ class Intent(object):
 
     def getArgs(self):
         return self.getCmdStr().split()
+
+

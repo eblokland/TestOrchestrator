@@ -3,17 +3,12 @@ from configparser import ConfigParser
 from app_profiler import AppProfiler
 import time
 from environment_sampler import EnvironmentSampler
+from device import *
 
 def simpleperfCmdBuilder(config: ConfigParser):
     newcfg = types.SimpleNamespace()
     str = ''
     cfg = config['SIMPLEPERF']
-    #loc = cfg.get('simpleperfdevicelocation')
-    #if loc is None:
-    #    str += 'simpleperf'
-    #else:
-    #    str += loc
-    #str += ' record '
     rawstr = cfg.get('raw')
     if rawstr is not None:
         return str + rawstr
@@ -22,7 +17,6 @@ def simpleperfCmdBuilder(config: ConfigParser):
     if aut is None:
         raise Exception('unknown aut, can\'t proceed')
 
-    #str += ' --app ' + aut
     newcfg.app = aut
 
     events = cfg.get('events')
@@ -50,7 +44,12 @@ def simpleperfCmdBuilder(config: ConfigParser):
     outfile = cfg.get('simpleperfoutputpath')
     if outfile is not None:
         newcfg.perf_data_path = outfile
+    sharedconfig = config['CONFIG']
+    outfilename = sharedconfig.get('outfilename')
+    if outfilename is not None:
+        newcfg.perf_data_path += outfilename + '.data'
 
+    str += ' --clockid monotonic_raw '
     newcfg.record_options = str
     newcfg.disable_adb_root = True
     newcfg.native_lib_dir = None
@@ -69,9 +68,12 @@ class InstrumentedTest(object):
         self.cfg.read(cfgloc)
 
     def runtest(self):
+        adbDevice = get_device()
         args = simpleperfCmdBuilder(self.cfg)
         profiler = AppProfiler(args)
         samp = EnvironmentSampler(self.cfg)
+
+
         if not samp.check_installed():
             samp.install_pkg()
         if not samp.start_file_log():
@@ -79,5 +81,6 @@ class InstrumentedTest(object):
         profiler.start()
         self.testfun()
         profiler.stop_profiling()
+        profiler.collect_profiling_data()
         samp.stop_file_log()
         samp.pull_log()
