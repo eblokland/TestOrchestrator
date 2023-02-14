@@ -100,6 +100,12 @@ class EnvironmentSampler(object):
     def stop_logcat_log(self):
         return self.send_intent(Intent(action=Actions.STOPLOGCAT))
 
+    def get_device_path(self):
+        return self.shellfiledir + self.outfilename + '.txt'
+
+    def get_local_path(self):
+        return self.localpath + self.outfilename + '.txt'
+
     def pull_log(self):
-        args = ['pull', self.shellfiledir+self.outfilename+'.txt', self.localpath]
+        args = ['pull', self.get_device_path(), self.get_local_path()]
         return self.adbhelper.run(adb_args=args)

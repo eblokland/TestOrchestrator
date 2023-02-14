@@ -4,6 +4,9 @@ from app_profiler import AppProfiler
 import time
 from environment_sampler import EnvironmentSampler
 from device import *
+from binary_cache_builder import BinaryCacheBuilder
+from os import chdir, getcwd
+
 
 def simpleperfCmdBuilder(config: ConfigParser):
     newcfg = types.SimpleNamespace()
@@ -30,7 +33,6 @@ def simpleperfCmdBuilder(config: ConfigParser):
     freq = cfg.get('frequency')
     if freq is not None:
         str += ' -f ' + freq
-
 
     doCallstack = cfg.getboolean('docallstack')
     if doCallstack is not None and doCallstack:
@@ -60,6 +62,7 @@ def simpleperfCmdBuilder(config: ConfigParser):
     newcfg.skip_collect_binaries = True
     return newcfg
 
+
 class InstrumentedTest(object):
     def __init__(self, testfun, cfgloc):
         self.testfun = testfun
@@ -68,19 +71,36 @@ class InstrumentedTest(object):
         self.cfg.read(cfgloc)
 
     def runtest(self):
-        adbDevice = get_device()
         args = simpleperfCmdBuilder(self.cfg)
         profiler = AppProfiler(args)
         samp = EnvironmentSampler(self.cfg)
-
 
         if not samp.check_installed():
             samp.install_pkg()
         if not samp.start_file_log():
             raise Exception('failed to start logger')
+
         profiler.start()
+
         self.testfun()
+
         profiler.stop_profiling()
         profiler.collect_profiling_data()
+
         samp.stop_file_log()
         samp.pull_log()
+
+        self._build_bincache(args.perf_data_path)
+
+    def _build_bincache(self, perf_data_path, symfspaths=None):
+        #binary cache doesn't support custom directories... just change pwd instead.
+        current_dir = os.getcwd()
+        conf = self.cfg['CONFIG']
+        bin_cache_path = conf.get('binarycachepath')
+        os.chdir(bin_cache_path)
+        ndk_path = conf.get('ndkpath')
+        if ndk_path == '':
+            ndk_path = None
+        bin_cache = BinaryCacheBuilder(ndk_path=ndk_path, disable_adb_root=True)
+        bin_cache.build_binary_cache(perf_data_path, symfspaths)
+        os.chdir(current_dir)
