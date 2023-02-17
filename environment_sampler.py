@@ -11,7 +11,7 @@ class CommandLineSampler(object):
         self.adbhelper = AdbHelper(enable_switch_to_root=False)
 
     def send_intent(self, intent: Intent):
-        return self.adbhelper.run(adb_args=['shell'] + intent.getArgs())
+        return self.adbhelper.run(adb_args=['shell'] + intent.getArgs(), log_output=True, log_stderr=True)
 
     def start_logcat_log(self):
         return self.send_intent(Intent(action=Actions.WRITELOGCAT))
@@ -59,7 +59,7 @@ class EnvironmentSampler(object):
 
     def check_installed(self):
         output = self.adbhelper.run_and_return_output(adb_args=['shell', 'pm', 'list', 'packages', '-3'],
-                                                      log_output=False)
+                                                      log_output=True)
         if not self.samplerpkg:
             raise Exception('sampler app package unknown')
         return self.samplerpkg in output[1]

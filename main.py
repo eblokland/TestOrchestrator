@@ -6,7 +6,7 @@ from TestRunner import InstrumentedTest
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
 
 def workload():
-    time.sleep(10)
+    time.sleep(120)
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':

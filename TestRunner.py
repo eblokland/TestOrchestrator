@@ -7,6 +7,8 @@ from device import *
 from binary_cache_builder import BinaryCacheBuilder
 from os import chdir, getcwd
 
+from simpleperf_utils import AdbHelper
+
 
 def simpleperfCmdBuilder(config: ConfigParser):
     newcfg = types.SimpleNamespace()
@@ -52,6 +54,7 @@ def simpleperfCmdBuilder(config: ConfigParser):
         newcfg.perf_data_path += outfilename + '.data'
 
     str += ' --clockid monotonic_raw '
+    str += ' --trace-offcpu '
     newcfg.record_options = str
     newcfg.disable_adb_root = True
     newcfg.native_lib_dir = None
@@ -73,6 +76,7 @@ class InstrumentedTest(object):
     def runtest(self):
         args = simpleperfCmdBuilder(self.cfg)
         profiler = AppProfiler(args)
+        profiler.prepare()
         samp = EnvironmentSampler(self.cfg)
 
         if not samp.check_installed():
@@ -80,11 +84,14 @@ class InstrumentedTest(object):
         if not samp.start_file_log():
             raise Exception('failed to start logger')
 
+        adb = AdbHelper()
+
+        print(adb.run_and_return_output(['shell', 'dumpsys', 'battery', '|', 'grep', 'charge']))
         profiler.start()
-
         self.testfun()
-
+        print(adb.run_and_return_output(['shell', 'dumpsys', 'battery', '|', 'grep', 'charge']))
         profiler.stop_profiling()
+
         profiler.collect_profiling_data()
 
         samp.stop_file_log()
@@ -99,8 +106,9 @@ class InstrumentedTest(object):
         bin_cache_path = conf.get('binarycachepath')
         os.chdir(bin_cache_path)
         ndk_path = conf.get('ndkpath')
+        disable_root = conf.getboolean('disable_root')
         if ndk_path == '':
             ndk_path = None
-        bin_cache = BinaryCacheBuilder(ndk_path=ndk_path, disable_adb_root=True)
+        bin_cache = BinaryCacheBuilder(ndk_path=ndk_path, disable_adb_root=disable_root)
         bin_cache.build_binary_cache(perf_data_path, symfspaths)
         os.chdir(current_dir)
