@@ -2,6 +2,8 @@
 Intent.py: Helper functions to create Intents for am start-server
 """
 from enum import Enum, auto
+from functools import singledispatch
+from typing import List
 
 from simpleperf_utils import AdbHelper
 
@@ -42,13 +44,13 @@ class Extra(object):
         self.value = value
         self.key = key
 
-    def getStr(self):
+    def get_str(self):
         return self.type + ' ' + str(self.key) + ' ' + str(self.value)
 
 
 class Intent(object):
     def __init__(self, activity='land.erikblok.infosamplerservice/.EnvironmentSampler', action=None, uri=None,
-                 extras=None):
+                 extras: List[Extra] = None):
         if extras is None:
             extras = []
         self.activity = activity
@@ -61,21 +63,25 @@ class Intent(object):
         self.uri = uri
         self.extras = extras
 
-    def addExtra(self, extra):
+    def add_extras(self, extras: List[Extra]):
+        for extra in extras:
+            self.add_extra(extra)
+
+    def add_extra(self, extra: Extra):
         if isinstance(extra, Extra):
             self.extras += extra
         else:
             raise Exception('argument not extra')
 
-    def setAction(self, action):
+    def set_action(self, action: Actions):
         if not isinstance(action, Actions):
             raise Exception('invalid action')
         self.action = action.value
 
-    def setActivity(self, activity):
+    def set_activity(self, activity):
         self.activity = activity
 
-    def getCmdStr(self):
+    def get_cmd_str(self):
         str = 'am start-foreground-service'
         if self.action:
             str += ' '
@@ -87,13 +93,15 @@ class Intent(object):
             for e in self.extras:
                 if isinstance(e, Extra):
                     str += ' '
-                    str += e.getStr()
+                    str += e.get_str()
         str += ' "'
         str += self.activity + '"'
         return str
 
-    def getArgs(self):
-        return self.getCmdStr().split()
+    def get_args(self):
+        return self.get_cmd_str().split()
 
-    def send_intent(self, adb: AdbHelper):
-        return adb.run(adb_args=['shell'] + self.getArgs(), log_output=True, log_stderr=True)
+    def send_intent(self, adb: AdbHelper = None):
+        if adb is None:
+            adb = AdbHelper()
+        return adb.run(adb_args=['shell'] + self.get_args(), log_output=True, log_stderr=True)

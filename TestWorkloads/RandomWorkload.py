@@ -1,8 +1,12 @@
 import csv
 import time
+from abc import ABC
 from configparser import ConfigParser
+from functools import singledispatch
 
 from simpleperf_utils import AdbHelper
+
+from TestWorkloads.AbstractWorkload import AbstractWorkload
 from adb_helpers.Intent import Intent, Actions, Extra, ExtraTypes
 from TestRunner.TestRunner import InstrumentedTest
 
@@ -18,7 +22,7 @@ NUM_CLASSES = "num_classes"
 workload_runtime_csv_header = ['Classname', 'Runtime (ns)', 'proportion of total', 'proportion of active']
 
 
-class workload_runtime(object):
+class random_workload_runtime(object):
     def __init__(self, cut_string: str):
         split = cut_string.split(', ')
         self.classname = split[0]
@@ -38,12 +42,14 @@ class workload_runtime(object):
         return [self.classname, self.runtime, self.prop, self.runprop]
 
 
+# region PARSE_LOGCAT
+
 def extract_num_classes(line: str) -> int:
     split = line.strip().split(' ')
     return int(split[len(split) - 1])
 
 
-def parse_class_runtimes(times: list[str]) -> list[workload_runtime]:
+def parse_class_runtimes(times: list[str]) -> list[random_workload_runtime]:
     cut_strs = []
     for time in times:
         (before, part, after) = time.partition('RANDOM_WORKER: ')
@@ -52,21 +58,13 @@ def parse_class_runtimes(times: list[str]) -> list[workload_runtime]:
             continue
         cut_strs.append(after)
 
-    runtimes: list[workload_runtime] = []
+    runtimes: list[random_workload_runtime] = []
     for str in cut_strs:
-        runtimes.append(workload_runtime(str))
+        runtimes.append(random_workload_runtime(str))
     return runtimes
 
 
-def print_csv(runtimes: list[workload_runtime], total_time: int, output_file):
-    with open(output_file, mode='w', newline='') as csvfile:
-        writer = csv.writer(csvfile, delimiter=',', quotechar='|')
-        writer.writerow(workload_runtime_csv_header)
-        for t in runtimes:
-            writer.writerow(t.to_arr())
-
-
-def parse_logcat_string(logcatstring: str) -> (int, list[workload_runtime]):
+def parse_logcat_string(logcatstring: str) -> (int, list[random_workload_runtime]):
     logcat_list = logcatstring.split('\n')
     # work backwards so we have the most recent
     filtered_logcat = []
@@ -92,48 +90,68 @@ def parse_logcat_string(logcatstring: str) -> (int, list[workload_runtime]):
     return total_time, runtimes
 
 
-def run_random_workload(config):
-    rand_conf = config['RANDOM_WORKLOAD']
-    runtime = rand_conf.getint('runtime')
-    pause_prob = rand_conf.getfloat('pause_prob')
-    timestep = rand_conf.getint('timestep')
-    num_classes = rand_conf.getint('num_classes')
+# endregion
 
-    adb = AdbHelper()
-    extras = [Extra(ExtraTypes.INT, TIMESTEP, timestep),
-              Extra(ExtraTypes.INT, RUNTIME, runtime),
-              Extra(ExtraTypes.FLOAT, SLEEP_PROB, pause_prob),
-              Extra(ExtraTypes.INT, NUM_CLASSES, num_classes)]
-    intent = Intent(activity=PACKAGE, action=Actions.STARTRANDOM, extras=extras)
-
-    intent.send_intent(adb)
-
-    time.sleep(runtime + 1)
+def write_csv(runtimes: list[random_workload_runtime], total_time: int, output_file):
+    with open(output_file, mode='w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',', quotechar='|')
+        writer.writerow(workload_runtime_csv_header)
+        for t in runtimes:
+            writer.writerow(t.to_arr())
 
 
-def post_random_workload(config):
-    rand_conf = config['RANDOM_WORKLOAD']
-    adb = AdbHelper(enable_switch_to_root=False)
-    status, pid = adb.run_and_return_output(['shell', 'pidof', config['SIMPLEPERF'].get('aut')])
-    if not status:
-        print("failed to get pid")
-        return
+class RandomWorkload(AbstractWorkload):
+    def __init__(self, file):
+        self.adb = AdbHelper(enable_switch_to_root=False)
+        self._read_config(file)
 
-    print(pid)
-    status, logcat_str = adb.run_and_return_output(
-        ['shell', 'logcat', '-d', '--pid=' + str(pid)], True, True)
-    if not status:
-        print("something went wrong with logcat!")
-        return
+    def _read_config(self, file: str):
+        config = ConfigParser()
+        config.read(file)
+        self.aut = cfg['SIMPLEPERF'].get('aut')
+        rand_conf = cfg['RANDOM_WORKLOAD']
+        self.csv_file = rand_conf.get('csv_output_path') + rand_conf.get('csv_name') + '.csv'
 
-    (total_time, runtimes) = parse_logcat_string(logcat_str)
-    csv_file = rand_conf.get('csv_output_path') + rand_conf.get('csv_name') + '.csv'
-    print_csv(runtimes=runtimes, total_time=total_time, output_file=csv_file)
+        self.runtime = rand_conf.getint('runtime')
+        self.pause_prob = rand_conf.getfloat('pause_prob')
+        self.timestep = rand_conf.getint('timestep')
+        self.num_classes = rand_conf.getint('num_classes')
+        if self.runtime is None or self.pause_prob is None \
+                or self.timestep is None or self.num_classes is None:
+            raise ValueError('Invalid config file!')
+
+    def pre_test(self):
+        pass
+
+    def test_workload(self):
+        extras = [Extra(ExtraTypes.INT, TIMESTEP, self.timestep),
+                  Extra(ExtraTypes.INT, RUNTIME, self.runtime),
+                  Extra(ExtraTypes.FLOAT, SLEEP_PROB, self.pause_prob),
+                  Extra(ExtraTypes.INT, NUM_CLASSES, self.num_classes)]
+        intent = Intent(activity=PACKAGE, action=Actions.STARTRANDOM, extras=extras)
+
+        intent.send_intent(self.adb)
+
+        time.sleep(self.runtime + 1)
+
+    def post_test(self):
+        status, pid = self.adb.run_and_return_output(['shell', 'pidof', self.aut])
+        if not status:
+            print("failed to get pid")
+            return
+        print(pid)
+        status, logcat_str = self.adb.run_and_return_output(
+            ['shell', 'logcat', '-d', '--pid=' + str(pid)], True, True)
+        if not status:
+            print("something went wrong with logcat!")
+            return
+
+        (total_time, runtimes) = parse_logcat_string(logcat_str)
+        write_csv(runtimes=runtimes, total_time=total_time, output_file=self.csv_file)
 
 
 if __name__ == "__main__":
     cfg = ConfigParser()
     cfg.read('config.ini')
-    test = InstrumentedTest(lambda: run_random_workload(cfg), 'config.ini')
+    test = InstrumentedTest(RandomWorkload('../config.ini'), '../config.ini')
     test.runtest()
-    post_random_workload(cfg)

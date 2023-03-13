@@ -10,7 +10,7 @@ class CommandLineSampler(object):
         self.adbhelper = AdbHelper(enable_switch_to_root=False)
 
     def send_intent(self, intent: Intent):
-        return self.adbhelper.run(adb_args=['shell'] + intent.getArgs(), log_output=True, log_stderr=True)
+        return self.adbhelper.run(adb_args=['shell'] + intent.get_args(), log_output=True, log_stderr=True)
 
     def start_logcat_log(self):
         return self.send_intent(Intent(action=Actions.WRITELOGCAT))

@@ -1,6 +1,8 @@
 import types
 from configparser import ConfigParser
 from app_profiler import AppProfiler
+
+from TestWorkloads.AbstractWorkload import AbstractWorkload
 from samplers.environment_sampler import EnvironmentSampler
 from device import *
 from binary_cache_builder import BinaryCacheBuilder
@@ -11,8 +13,8 @@ from simpleperf_helpers.simpleperf_command import SimpleperfCommand
 
 
 class InstrumentedTest(object):
-    def __init__(self, testfun, cfgloc):
-        self.testfun = testfun
+    def __init__(self, workload: AbstractWorkload, cfgloc):
+        self.workload = workload
         self.cfgloc = cfgloc
         self.cfg = ConfigParser()
         self.cfg.read(cfgloc)
@@ -22,6 +24,9 @@ class InstrumentedTest(object):
         args = command.build_simpleperf_obj()
         profiler = AppProfiler(args)
         profiler.prepare()
+
+        self.workload.pre_test()
+
         samp = EnvironmentSampler(self.cfg)
 
         if not samp.check_installed():
@@ -33,10 +38,11 @@ class InstrumentedTest(object):
 
         print(adb.run_and_return_output(['shell', 'dumpsys', 'battery', '|', 'grep', '-i', 'charge']))
         profiler.start()
-        self.testfun()
+        self.workload.test_workload()
         print(adb.run_and_return_output(['shell', 'dumpsys', 'battery', '|', 'grep','-i', 'charge']))
         profiler.stop_profiling()
         samp.stop_file_log()
+        self.workload.post_test()
         profiler.collect_profiling_data()
         samp.pull_log()
 

@@ -36,7 +36,7 @@ class EnvironmentSampler(object):
         return self.adbhelper.run(adb_cmd)
 
     def send_intent(self, intent: Intent):
-        return self.adbhelper.run(adb_args=['shell'] + intent.getArgs())
+        return self.adbhelper.run(adb_args=['shell'] + intent.get_args())
 
     def start_file_log(self):
         filepath = 'file://' + self.devicefiledir + self.outfilename + '.txt'
