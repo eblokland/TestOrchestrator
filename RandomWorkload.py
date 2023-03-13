@@ -3,8 +3,8 @@ import time
 from configparser import ConfigParser
 
 from simpleperf_utils import AdbHelper
-from Intent import Intent, Actions, Extra, ExtraTypes
-from TestRunner import InstrumentedTest
+from adb_helpers.Intent import Intent, Actions, Extra, ExtraTypes
+from TestRunner.TestRunner import InstrumentedTest
 
 PACKAGE = 'land.erikblok.busyworker/.BusyWorkerService'
 
