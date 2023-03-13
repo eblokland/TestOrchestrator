@@ -15,7 +15,7 @@ NUM_THREADS = "num_threads"
 WORKER_ID = "worker_id"
 NUM_CLASSES = "num_classes"
 
-workload_runtime_csv_header = ['Classname', 'Runtime (ns)', 'proportion of total']
+workload_runtime_csv_header = ['Classname', 'Runtime (ns)', 'proportion of total', 'proportion of active']
 
 
 class workload_runtime(object):
@@ -24,16 +24,18 @@ class workload_runtime(object):
         self.classname = split[0]
         self.runtime = int(split[1])
         self.prop = 0.0
+        self.runprop = 0.0
 
     def set_prop(self, total_time: int) -> float:
         self.prop = float(self.runtime) / float(total_time)
         return self.prop
 
-    def csv_line(self) -> str:
-        return self.classname + ',' + str(self.runtime) + ',' + str(self.prop) + '\n'
+    def set_run_prop(self, run_time: int):
+        self.runprop = float(self.runtime) / float(run_time)
+        return self.runprop
 
     def to_arr(self):
-        return [self.classname, self.runtime, self.prop]
+        return [self.classname, self.runtime, self.prop, self.runprop]
 
 
 def extract_num_classes(line: str) -> int:
@@ -83,14 +85,15 @@ def parse_logcat_string(logcatstring: str) -> (int, list[workload_runtime]):
     total_time = 0
     for t in runtimes:
         total_time += t.runtime
-
+    sleep_time = next(x for x in runtimes if 'SleepWorkload' in x.classname).runtime
     for t in runtimes:
         t.set_prop(total_time)
+        t.set_run_prop(total_time - sleep_time)
     return total_time, runtimes
 
 
-def run_random_workload(cfg):
-    rand_conf = cfg['RANDOM_WORKLOAD']
+def run_random_workload(config):
+    rand_conf = config['RANDOM_WORKLOAD']
     runtime = rand_conf.getint('runtime')
     pause_prob = rand_conf.getfloat('pause_prob')
     timestep = rand_conf.getint('timestep')
@@ -108,17 +111,17 @@ def run_random_workload(cfg):
     time.sleep(runtime + 1)
 
 
-def post_random_workload(cfg):
-    rand_conf = cfg['RANDOM_WORKLOAD']
+def post_random_workload(config):
+    rand_conf = config['RANDOM_WORKLOAD']
     adb = AdbHelper(enable_switch_to_root=False)
-    status, pid = adb.run_and_return_output(['shell', 'pidof', cfg['SIMPLEPERF'].get('aut')])
+    status, pid = adb.run_and_return_output(['shell', 'pidof', config['SIMPLEPERF'].get('aut')])
     if not status:
         print("failed to get pid")
         return
 
     print(pid)
     status, logcat_str = adb.run_and_return_output(
-        ['shell', 'logcat','-d', '--pid=' + str(pid)], True, True)
+        ['shell', 'logcat', '-d', '--pid=' + str(pid)], True, True)
     if not status:
         print("something went wrong with logcat!")
         return

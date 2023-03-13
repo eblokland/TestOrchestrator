@@ -35,17 +35,6 @@ def doTheThing():
         actualPeriod = next.time - samp.time
         print('Cpu = ' + str(samp.cpu) + ' claimed period = ' + str(samp.period) + ' actual = ' + str(actualPeriod) + ' event name = ' + str(samp.tid))
 
-
-
-    #for samp in sampleList:
-        #if(samp.event == 'task-clock'):
-         #   continue
-        #if samp.cpu != 0:
-            #print('continued')
-         #   continue
-    #    delta = samp.time - prevTime
-    #    print('cpu = ' + str(samp.cpu) + ' delta = ' + str(delta) + ' period = ' + str(samp.period))
-    #    prevTime = samp.time
     print(lib.GetRecordCmd())
     lib.Close()
 
