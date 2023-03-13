@@ -53,8 +53,12 @@ def simpleperfCmdBuilder(config: ConfigParser):
     if outfilename is not None:
         newcfg.perf_data_path += outfilename + '.data'
 
-    str += ' --clockid monotonic_raw '
-    str += ' --trace-offcpu '
+    clockid = cfg.get('clockid')
+    if clockid is not None:
+        str += ' --clockid ' + clockid
+    trace_offcpu = cfg.getboolean('trace_offcpu')
+    if trace_offcpu is not None and trace_offcpu:
+        str += ' --trace-offcpu '
     newcfg.record_options = str
     newcfg.disable_adb_root = True
     newcfg.native_lib_dir = None
@@ -86,10 +90,10 @@ class InstrumentedTest(object):
 
         adb = AdbHelper()
 
-        print(adb.run_and_return_output(['shell', 'dumpsys', 'battery', '|', 'grep', 'charge']))
+        print(adb.run_and_return_output(['shell', 'dumpsys', 'battery', '|', 'grep', '-i', 'charge']))
         profiler.start()
         self.testfun()
-        print(adb.run_and_return_output(['shell', 'dumpsys', 'battery', '|', 'grep', 'charge']))
+        print(adb.run_and_return_output(['shell', 'dumpsys', 'battery', '|', 'grep','-i', 'charge']))
         profiler.stop_profiling()
 
         profiler.collect_profiling_data()

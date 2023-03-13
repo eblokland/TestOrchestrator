@@ -3,6 +3,8 @@ Intent.py: Helper functions to create Intents for am start-server
 """
 from enum import Enum, auto
 
+from simpleperf_utils import AdbHelper
+
 
 class Actions(Enum):
     WRITEFILE = "land.erikblok.action.WRITETOFILE"
@@ -11,6 +13,11 @@ class Actions(Enum):
     STOPFILE = "land.erikblok.action.STOPFILE"
     STOPLOGCAT = "land.erikblok.action.STOPLOGCAT"
     NOKEEPALIVE = "land.erikblok.action.NOKEEPALIVE"
+
+    STOPRANDOM = "land.erikblok.action.STOP_RANDOM"
+    STARTRANDOM = "land.erikblok.action.START_RANDOM"
+    STARTBUSY = "land.erikblok.action.START_BUSY"
+    STOPBUSY = "land.erikblok.action.STOP_BUSY"
 
 
 class ExtraTypes(Enum):
@@ -21,7 +28,7 @@ class ExtraTypes(Enum):
 
 
 class Extra(object):
-    def __init__(self, type, value):
+    def __init__(self, type, key, value):
         if type == ExtraTypes.BOOL:
             self.type = '--ez'
         elif type == ExtraTypes.FLOAT:
@@ -33,9 +40,10 @@ class Extra(object):
         else:
             raise Exception("Invalid type for extra")
         self.value = value
+        self.key = key
 
     def getStr(self):
-        return self.type + ' ' + self.value
+        return self.type + ' ' + str(self.key) + ' ' + str(self.value)
 
 
 class Intent(object):
@@ -87,4 +95,5 @@ class Intent(object):
     def getArgs(self):
         return self.getCmdStr().split()
 
-
+    def send_intent(self, adb: AdbHelper):
+        return adb.run(adb_args=['shell'] + self.getArgs(), log_output=True, log_stderr=True)

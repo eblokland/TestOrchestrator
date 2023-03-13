@@ -19,8 +19,8 @@ class CommandLineSampler(object):
     def stop_logcat_log(self):
         return self.send_intent(Intent(action=Actions.STOPLOGCAT))
 
-    def start_file_log(self,outfilename='log.txt', devicefiledir='/mnt/sdcard/logs/'):
-        filepath = 'file://'+devicefiledir + outfilename
+    def start_file_log(self, outfilename='log.txt', devicefiledir='/mnt/sdcard/logs/'):
+        filepath = 'file://' + devicefiledir + outfilename
         intent = Intent(action=Actions.WRITEFILE, uri=filepath)
         result = self.send_intent(intent)
         if result:
@@ -31,7 +31,7 @@ class CommandLineSampler(object):
     def stop_file_log(self):
         intent = Intent(action=Actions.STOPFILE)
         if self.send_intent(intent):
-            #let's sleep here to give it some time to flush the filewriter :)
+            # let's sleep here to give it some time to flush the filewriter :)
             time.sleep(0.5)
             return True
         else:
@@ -56,6 +56,7 @@ class EnvironmentSampler(object):
         self.shellfiledir = samplercfg.get('shellfiledir')
         self.outfilename = config.get('outfilename')
         self.localpath = samplercfg.get('samplerlogoutputpath')
+        self.use_runas = samplercfg.getboolean('use_runas')
 
     def check_installed(self):
         output = self.adbhelper.run_and_return_output(adb_args=['shell', 'pm', 'list', 'packages', '-3'],
@@ -73,10 +74,10 @@ class EnvironmentSampler(object):
         return self.adbhelper.run(adb_cmd)
 
     def send_intent(self, intent: Intent):
-        return self.adbhelper.run(adb_args=['shell']+intent.getArgs())
+        return self.adbhelper.run(adb_args=['shell'] + intent.getArgs())
 
     def start_file_log(self):
-        filepath = 'file://'+self.devicefiledir + self.outfilename + '.txt'
+        filepath = 'file://' + self.devicefiledir + self.outfilename + '.txt'
         intent = Intent(action=Actions.WRITEFILE, uri=filepath)
         result = self.send_intent(intent)
         if result:
@@ -88,7 +89,7 @@ class EnvironmentSampler(object):
     def stop_file_log(self):
         intent = Intent(action=Actions.STOPFILE)
         if self.send_intent(intent):
-            #let's sleep here to give it some time to flush the filewriter :)
+            # let's sleep here to give it some time to flush the filewriter :)
             time.sleep(0.5)
             return True
         else:
@@ -106,6 +107,25 @@ class EnvironmentSampler(object):
     def get_local_path(self):
         return self.localpath + self.outfilename + '.txt'
 
-    def pull_log(self):
-        args = ['pull', self.get_device_path(), self.get_local_path()]
-        return self.adbhelper.run(adb_args=args)
+    def pull_log(self, log_things: bool = False):
+        def run_as():
+            args = ['shell', 'run-as', self.samplerpkg, 'cat', self.devicefiledir + self.outfilename + '.txt']
+            (status, out_str) = self.adbhelper.run_and_return_output(adb_args=args, log_output=log_things, log_stderr=log_things)
+            if status:
+                with open(self.get_local_path(), mode="w") as file:
+                    file.write(out_str.strip())
+            return status
+
+        if self.use_runas:
+            status = run_as()
+        else:
+            #we will attempt to try this normally first.
+            #if that fails, fall back to a run-as thing.
+            #may need to later fix the device path on run-as
+            #to default to something that's not devicefiledir.
+            args = ['pull', self.get_device_path(), self.get_local_path()]
+            status = self.adbhelper.run(adb_args=args, log_output=log_things, log_stderr=log_things)
+            if not status:
+                status = run_as()
+
+        return status
