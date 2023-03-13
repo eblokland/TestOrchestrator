@@ -7,7 +7,7 @@ from binary_cache_builder import BinaryCacheBuilder
 
 from simpleperf_utils import AdbHelper
 
-from simpleperf_helpers.simpleperf_command_builder import SimpleperfCommand
+from simpleperf_helpers.simpleperf_command import SimpleperfCommand
 
 
 class InstrumentedTest(object):

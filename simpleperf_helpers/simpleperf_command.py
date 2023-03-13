@@ -4,19 +4,20 @@ from configparser import ConfigParser
 from functools import singledispatchmethod
 import os
 
+
 class SimpleperfCommand(object):
     @singledispatchmethod
     def __init__(self, arg):
         raise ValueError(f"Unknown argument: {arg}")
 
     @__init__.register(str)
-    def _init_from_string(self, string:str):
+    def _init_from_string(self, string: str):
         if not os.path.isfile(string):
+            # TODO: maybe try to parse the command from a string?
             raise ValueError('File not found, will not try to parse as command either')
         cfg = ConfigParser()
         cfg.read(string)
         self._init_from_cfg(self, cfg)
-
 
     @__init__.register(ConfigParser)
     def _init_from_cfg(self, cfg: ConfigParser):
