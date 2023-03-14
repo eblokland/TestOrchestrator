@@ -1,22 +1,10 @@
 # This is a sample Python script.
-import time
 
-from TestRunner.TestRunner import InstrumentedTest
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+from test_runner.test_runner import InstrumentedTest
+from test_workloads.sleep_workload import SleepWorkload
 
-def workload():
-    time.sleep(70)
-
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    test = InstrumentedTest(workload, 'config.ini')
+    test = InstrumentedTest(SleepWorkload(70), 'config.ini')
     test.runtest()
 
-
-
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
-
-
-
-

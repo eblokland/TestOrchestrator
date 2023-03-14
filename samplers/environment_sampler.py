@@ -1,9 +1,11 @@
 import os
+import time
 from configparser import ConfigParser
 
 from simpleperf_utils import AdbHelper
-from adb_helpers.Intent import Intent, Actions
-import time
+
+from adb_helpers.intent import Intent, Actions
+
 
 class EnvironmentSampler(object):
     def __init__(self, cfg: ConfigParser):
@@ -71,8 +73,9 @@ class EnvironmentSampler(object):
 
     def pull_log(self, log_things: bool = False):
         def run_as():
-            args = ['shell', 'run-as', self.samplerpkg, 'cat', self.devicefiledir + self.outfilename + '.txt']
-            (status, out_str) = self.adbhelper.run_and_return_output(adb_args=args, log_output=log_things, log_stderr=log_things)
+            adb_args = ['shell', 'run-as', self.samplerpkg, 'cat', self.devicefiledir + self.outfilename + '.txt']
+            (status, out_str) = self.adbhelper.run_and_return_output(adb_args=adb_args, log_output=log_things,
+                                                                     log_stderr=log_things)
             if status:
                 with open(self.get_local_path(), mode="w") as file:
                     file.write(out_str.strip())
@@ -81,10 +84,10 @@ class EnvironmentSampler(object):
         if self.use_runas:
             status = run_as()
         else:
-            #we will attempt to try this normally first.
-            #if that fails, fall back to a run-as thing.
-            #may need to later fix the device path on run-as
-            #to default to something that's not devicefiledir.
+            # we will attempt to try this normally first.
+            # if that fails, fall back to a run-as thing.
+            # may need to later fix the device path on run-as
+            # to default to something that's not devicefiledir.
             args = ['pull', self.get_device_path(), self.get_local_path()]
             status = self.adbhelper.run(adb_args=args, log_output=log_things, log_stderr=log_things)
             if not status:

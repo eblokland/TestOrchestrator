@@ -1,8 +1,7 @@
 """
-Intent.py: Helper functions to create Intents for am start-server
+intent.py: Helper functions to create Intents for am start-server
 """
 from enum import Enum, auto
-from functools import singledispatch
 from typing import List
 
 from simpleperf_utils import AdbHelper
@@ -22,6 +21,8 @@ class Actions(Enum):
     STOPBUSY = "land.erikblok.action.STOP_BUSY"
 
 
+# not sure why this triggers, by docs it should not...
+# noinspection PyArgumentList
 class ExtraTypes(Enum):
     INT = auto()
     FLOAT = auto()
@@ -30,14 +31,14 @@ class ExtraTypes(Enum):
 
 
 class Extra(object):
-    def __init__(self, type, key, value):
-        if type == ExtraTypes.BOOL:
+    def __init__(self, extra_type, key, value):
+        if extra_type == ExtraTypes.BOOL:
             self.type = '--ez'
-        elif type == ExtraTypes.FLOAT:
+        elif extra_type == ExtraTypes.FLOAT:
             self.type = '--ef'
-        elif type == ExtraTypes.LONG:
+        elif extra_type == ExtraTypes.LONG:
             self.type = '--el'
-        elif type == ExtraTypes.INT:
+        elif extra_type == ExtraTypes.INT:
             self.type = '--ei'
         else:
             raise Exception("Invalid type for extra")
@@ -82,21 +83,21 @@ class Intent(object):
         self.activity = activity
 
     def get_cmd_str(self):
-        str = 'am start-foreground-service'
+        cmd_str = 'am start-foreground-service'
         if self.action:
-            str += ' '
-            str += '-a "' + self.action + '"'
+            cmd_str += ' '
+            cmd_str += '-a "' + self.action + '"'
         if self.uri:
-            str += ' '
-            str += '-d "' + self.uri + '"'
+            cmd_str += ' '
+            cmd_str += '-d "' + self.uri + '"'
         if self.extras:
             for e in self.extras:
                 if isinstance(e, Extra):
-                    str += ' '
-                    str += e.get_str()
-        str += ' "'
-        str += self.activity + '"'
-        return str
+                    cmd_str += ' '
+                    cmd_str += e.get_str()
+        cmd_str += ' "'
+        cmd_str += self.activity + '"'
+        return cmd_str
 
     def get_args(self):
         return self.get_cmd_str().split()

@@ -2,7 +2,7 @@ import time
 
 from simpleperf_utils import AdbHelper
 
-from adb_helpers.Intent import Intent, Actions
+from adb_helpers.intent import Intent, Actions
 
 
 class CommandLineSampler(object):
@@ -38,5 +38,5 @@ class CommandLineSampler(object):
 
     def pull_file(self, outfilename='log.txt', filedir='/sdcard/logs/', localname='log.txt', localpath='./'):
         filepath = filedir + outfilename
-        localpath = localpath + localname
+        localpath += localname
         self.adbhelper.run(['pull', filepath, localpath])

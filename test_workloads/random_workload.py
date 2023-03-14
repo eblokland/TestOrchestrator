@@ -1,14 +1,12 @@
 import csv
 import time
-from abc import ABC
 from configparser import ConfigParser
-from functools import singledispatch
 
 from simpleperf_utils import AdbHelper
 
-from TestWorkloads.AbstractWorkload import AbstractWorkload
-from adb_helpers.Intent import Intent, Actions, Extra, ExtraTypes
-from TestRunner.TestRunner import InstrumentedTest
+from adb_helpers.intent import Intent, Actions, Extra, ExtraTypes
+from test_runner.test_runner import InstrumentedTest
+from test_workloads.abstract_workload import AbstractWorkload
 
 PACKAGE = 'land.erikblok.busyworker/.BusyWorkerService'
 
@@ -22,7 +20,7 @@ NUM_CLASSES = "num_classes"
 workload_runtime_csv_header = ['Classname', 'Runtime (ns)', 'proportion of total', 'proportion of active']
 
 
-class random_workload_runtime(object):
+class RandomWorkloadRuntime(object):
     def __init__(self, cut_string: str):
         split = cut_string.split(', ')
         self.classname = split[0]
@@ -49,31 +47,31 @@ def extract_num_classes(line: str) -> int:
     return int(split[len(split) - 1])
 
 
-def parse_class_runtimes(times: list[str]) -> list[random_workload_runtime]:
+def parse_class_runtimes(times: list[str]) -> list[RandomWorkloadRuntime]:
     cut_strs = []
-    for time in times:
-        (before, part, after) = time.partition('RANDOM_WORKER: ')
+    for runtime in times:
+        (before, part, after) = runtime.partition('RANDOM_WORKER: ')
         if after == '':
             print('failed to split string?? ' + before)
             continue
         cut_strs.append(after)
 
-    runtimes: list[random_workload_runtime] = []
-    for str in cut_strs:
-        runtimes.append(random_workload_runtime(str))
+    runtimes: list[RandomWorkloadRuntime] = []
+    for string in cut_strs:
+        runtimes.append(RandomWorkloadRuntime(string))
     return runtimes
 
 
-def parse_logcat_string(logcatstring: str) -> (int, list[random_workload_runtime]):
+def parse_logcat_string(logcatstring: str) -> (int, list[RandomWorkloadRuntime]):
     logcat_list = logcatstring.split('\n')
     # work backwards so we have the most recent
     filtered_logcat = []
-    for str in logcat_list:
-        if 'RANDOM_WORKER' in str:
-            filtered_logcat.append(str)
+    for string in logcat_list:
+        if 'RANDOM_WORKER' in string:
+            filtered_logcat.append(string)
 
     pos = len(filtered_logcat) - 1
-    while not 'NUM CLASSES' in filtered_logcat[pos]:
+    while 'NUM CLASSES' not in filtered_logcat[pos]:
         pos -= 1
 
     latest_run = filtered_logcat[pos:]
@@ -92,7 +90,7 @@ def parse_logcat_string(logcatstring: str) -> (int, list[random_workload_runtime
 
 # endregion
 
-def write_csv(runtimes: list[random_workload_runtime], total_time: int, output_file):
+def write_csv(runtimes: list[RandomWorkloadRuntime], total_time: int, output_file):
     with open(output_file, mode='w', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=',', quotechar='|')
         writer.writerow(workload_runtime_csv_header)

@@ -1,8 +1,7 @@
 import copy
-import types
+import os
 from configparser import ConfigParser
 from functools import singledispatchmethod
-import os
 
 
 class SimpleperfCommand(object):
@@ -57,23 +56,23 @@ class SimpleperfCommand(object):
     # make a new one in case it does something to the object.
     def build_simpleperf_obj(self):
         newobj = copy.deepcopy(self)
-        str = ''
+        record_opts_string = ''
         if self.events is not None and self.events != '':
-            str += ' -e ' + self.events
+            record_opts_string += ' -e ' + self.events
         if self.duration is not None:
-            str += ' --duration ' + self.duration
+            record_opts_string += ' --duration ' + self.duration
         if self.freq is not None:
-            str += ' -f ' + self.freq
+            record_opts_string += ' -f ' + self.freq
         if self.do_callstack:
-            str += ' --call-graph '
+            record_opts_string += ' --call-graph '
             if self.use_dwarf:
-                str += 'dwarf '
+                record_opts_string += 'dwarf '
             else:
-                str += 'fp '
+                record_opts_string += 'fp '
         if self.clock_id is not None:
-            str += ' --clockid ' + self.clock_id
+            record_opts_string += ' --clockid ' + self.clock_id
 
         if self.trace_offcpu:
-            str += ' --trace-offcpu '
-        newobj.record_options = str
+            record_opts_string += ' --trace-offcpu '
+        newobj.record_options = record_opts_string
         return newobj
