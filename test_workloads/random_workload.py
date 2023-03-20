@@ -7,6 +7,7 @@ from simpleperf_utils import AdbHelper
 from adb_helpers.intent import Intent, Actions, Extra, ExtraTypes
 from test_runner.test_runner import InstrumentedTest
 from test_workloads.abstract_workload import AbstractWorkload
+from adb_helpers.logcat_utils import get_logcat_for_aut
 
 PACKAGE = 'land.erikblok.busyworker/.BusyWorkerService'
 
@@ -106,9 +107,9 @@ class RandomWorkload(AbstractWorkload):
     def _read_config(self, file: str):
         config = ConfigParser()
         config.read(file)
-        self.aut = cfg['SIMPLEPERF'].get('aut')
-        rand_conf = cfg['RANDOM_WORKLOAD']
+        rand_conf = config['RANDOM_WORKLOAD']
         self.csv_file = rand_conf.get('csv_output_path') + rand_conf.get('csv_name') + '.csv'
+        self.aut = rand_conf.get('pkg_name')
 
         self.runtime = rand_conf.getint('runtime')
         self.pause_prob = rand_conf.getfloat('pause_prob')
@@ -131,17 +132,15 @@ class RandomWorkload(AbstractWorkload):
         intent.send_intent(self.adb)
 
         time.sleep(self.runtime + 1)
+        #ensure worker has been stopped!
+        self.get_stop_intent().send_intent(self.adb)
+
+
 
     def post_test(self):
-        status, pid = self.adb.run_and_return_output(['shell', 'pidof', self.aut])
-        if not status:
-            print("failed to get pid")
-            return
-        print(pid)
-        status, logcat_str = self.adb.run_and_return_output(
-            ['shell', 'logcat', '-d', '--pid=' + str(pid)], True, True)
-        if not status:
-            print("something went wrong with logcat!")
+        time.sleep(1)
+        logcat_str = get_logcat_for_aut(self.aut, self.adb)
+        if logcat_str is None:
             return
 
         (total_time, runtimes) = parse_logcat_string(logcat_str)
@@ -149,7 +148,5 @@ class RandomWorkload(AbstractWorkload):
 
 
 if __name__ == "__main__":
-    cfg = ConfigParser()
-    cfg.read('config.ini')
-    test = InstrumentedTest(RandomWorkload('../config.ini'), '../config.ini')
+    test = InstrumentedTest(RandomWorkload('config.ini'), 'config.ini')
     test.runtest()

@@ -2,24 +2,11 @@
 intent.py: Helper functions to create Intents for am start-server
 """
 from enum import Enum, auto
+from functools import singledispatchmethod
 from typing import List
 
 from simpleperf_utils import AdbHelper
-
-
-class Actions(Enum):
-    WRITEFILE = "land.erikblok.action.WRITETOFILE"
-    WRITELOGCAT = "land.erikblok.action.WRITETOLOGCAT"
-    KEEPALIVE = "land.erikblok.action.NOWRITE"
-    STOPFILE = "land.erikblok.action.STOPFILE"
-    STOPLOGCAT = "land.erikblok.action.STOPLOGCAT"
-    NOKEEPALIVE = "land.erikblok.action.NOKEEPALIVE"
-
-    STOPRANDOM = "land.erikblok.action.STOP_RANDOM"
-    STARTRANDOM = "land.erikblok.action.START_RANDOM"
-    STARTBUSY = "land.erikblok.action.START_BUSY"
-    STOPBUSY = "land.erikblok.action.STOP_BUSY"
-
+from adb_helpers.actions import Actions
 
 # not sure why this triggers, by docs it should not...
 # noinspection PyArgumentList
@@ -31,7 +18,13 @@ class ExtraTypes(Enum):
 
 
 class Extra(object):
-    def __init__(self, extra_type, key, value):
+    @singledispatchmethod
+    def __init__(self, arg):
+        raise ValueError(f'Unknown argument of type {type(arg)}.  If a string, convert type first or '
+                         f'tell me what type it is.')
+
+    @__init__.register
+    def _init_with_type(self, extra_type: ExtraTypes, key, value):
         if extra_type == ExtraTypes.BOOL:
             self.type = '--ez'
         elif extra_type == ExtraTypes.FLOAT:
@@ -45,6 +38,30 @@ class Extra(object):
         self.value = value
         self.key = key
 
+    @__init__.register
+    def _init_with_int(self, value: int, key):
+        # auto detect if we need a long or an int.  it is not perfect, but I don't think
+        # i really ever use longs... can still manually specify this if needed.
+        if value > 2**31 -1 or value < -(2**31):
+            self.type = '--el'
+        else:
+            self.type = '--ei'
+
+        self.value = value
+        self.key = key
+
+    @__init__.register
+    def _init_with_float(self, value: float, key):
+        self.type = '--ef'
+        self.value = value
+        self.key = key
+
+    @__init__.register
+    def _init_with_bool(self, value: bool, key):
+        self.type = '--ez'
+        self.value = value
+        self.key = key
+
     def get_str(self):
         return self.type + ' ' + str(self.key) + ' ' + str(self.value)
 
@@ -55,12 +72,12 @@ class Intent(object):
         if extras is None:
             extras = []
         self.activity = activity
-        if action is None:
+        if action is None or isinstance(action, str):
             self.action = action
         elif isinstance(action, Actions):
             self.action = action.value
         else:
-            raise ValueError('invalid input for action')
+            raise ValueError(f'invalid input for action, got {type(action)}')
         self.uri = uri
         self.extras = extras
 
