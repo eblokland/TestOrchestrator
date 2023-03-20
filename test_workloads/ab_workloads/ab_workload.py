@@ -42,6 +42,7 @@ class ABWorkload(AbstractWorkload):
         intent.send_intent(self.adb)
         sleep(seconds + 1)
 
+    @abstractmethod
     def _read_file_concrete(self, file: str):
         pass
 

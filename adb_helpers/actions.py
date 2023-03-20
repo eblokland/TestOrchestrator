@@ -17,3 +17,4 @@ class Actions(Enum):
     START_MIM = "land.erikblok.action.START_MIM"
     START_IS = "land.erikblok.action.START_IS"
     START_FORLOOP = "land.erikblok.action.START_FORLOOP"
+    START_SENSOR = "land.erikblok.action.START_SENSOR"
