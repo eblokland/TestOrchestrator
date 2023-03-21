@@ -60,16 +60,7 @@ class SensorWorkload(AbstractWorkload):
         pass
 
     def test_workload(self):
-        extras = [
-            Extra(self.sensor_type, SENSOR_TYPE),
-            Extra(self.use_wakeup, USE_WAKEUP),
-            Extra(self.work_rate_hz, WORK_RATE_HZ),
-            Extra(self.samp_rate_hz, SAMP_RATE_HZ),
-        ]
-        if self.work_amount is not None:
-            extras.append(Extra(self.work_amount, WORK_AMOUNT))
-
-        intent = Intent(activity=PACKAGE, action=Actions.START_SENSOR, extras=extras)
+        intent = self.get_start_intent()
         intent.send_intent(self.adb)
 
         time.sleep(self.runtime_secs + 1)
@@ -80,6 +71,19 @@ class SensorWorkload(AbstractWorkload):
 
     def post_test(self):
         pass
+
+    def get_start_intent(self) -> Intent:
+        extras = [
+            Extra(self.sensor_type, SENSOR_TYPE),
+            Extra(self.use_wakeup, USE_WAKEUP),
+            Extra(self.work_rate_hz, WORK_RATE_HZ),
+            Extra(self.samp_rate_hz, SAMP_RATE_HZ),
+        ]
+        if self.work_amount is not None:
+            extras.append(Extra(self.work_amount, WORK_AMOUNT))
+
+        intent = Intent(activity=PACKAGE, action=Actions.START_SENSOR, extras=extras)
+        return intent
 
 if __name__ == "__main__":
     test = InstrumentedTest(SensorWorkload('config.ini'), 'config.ini')

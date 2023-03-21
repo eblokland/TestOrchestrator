@@ -1,6 +1,7 @@
 import csv
 import time
 from configparser import ConfigParser
+from functools import singledispatchmethod
 
 from simpleperf_utils import AdbHelper
 
@@ -100,9 +101,21 @@ def write_csv(runtimes: list[RandomWorkloadRuntime], total_time: int, output_fil
 
 
 class RandomWorkload(AbstractWorkload):
-    def __init__(self, file):
+
+    @singledispatchmethod
+    def __init__(self, arg):
+        raise TypeError(f'unknown argument type {type(arg)}')
+
+    @__init__.register
+    def _init_with_file(self, file: str):
         self.adb = AdbHelper(enable_switch_to_root=False)
         self._read_config(file)
+
+    @__init__.register
+    def _init_with_args(self, pause_prob:float, timestep: int, num_classes:int,
+                        csv_file: str = None, aut='land.erikblok.busyworker', runtime: int = None):
+        pass
+
 
     def _read_config(self, file: str):
         config = ConfigParser()
@@ -123,12 +136,7 @@ class RandomWorkload(AbstractWorkload):
         pass
 
     def test_workload(self):
-        extras = [Extra(ExtraTypes.INT, TIMESTEP, self.timestep),
-                  Extra(ExtraTypes.INT, RUNTIME, self.runtime),
-                  Extra(ExtraTypes.FLOAT, SLEEP_PROB, self.pause_prob),
-                  Extra(ExtraTypes.INT, NUM_CLASSES, self.num_classes)]
-        intent = Intent(activity=PACKAGE, action=Actions.STARTRANDOM, extras=extras)
-
+        intent = self.get_start_intent()
         intent.send_intent(self.adb)
 
         time.sleep(self.runtime + 1)
@@ -146,6 +154,13 @@ class RandomWorkload(AbstractWorkload):
         (total_time, runtimes) = parse_logcat_string(logcat_str)
         write_csv(runtimes=runtimes, total_time=total_time, output_file=self.csv_file)
 
+    def get_start_intent(self) -> Intent:
+        extras = [Extra(ExtraTypes.INT, TIMESTEP, self.timestep),
+                  Extra(ExtraTypes.INT, RUNTIME, self.runtime),
+                  Extra(ExtraTypes.FLOAT, SLEEP_PROB, self.pause_prob),
+                  Extra(ExtraTypes.INT, NUM_CLASSES, self.num_classes)]
+        intent = Intent(activity=PACKAGE, action=Actions.STARTRANDOM, extras=extras)
+        return intent
 
 if __name__ == "__main__":
     test = InstrumentedTest(RandomWorkload('config.ini'), 'config.ini')

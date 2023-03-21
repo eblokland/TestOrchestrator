@@ -6,7 +6,9 @@ from functools import singledispatchmethod
 from typing import List
 
 from simpleperf_utils import AdbHelper
+
 from adb_helpers.actions import Actions
+
 
 # not sure why this triggers, by docs it should not...
 # noinspection PyArgumentList
@@ -42,7 +44,7 @@ class Extra(object):
     def _init_with_int(self, value: int, key):
         # auto detect if we need a long or an int.  it is not perfect, but I don't think
         # i really ever use longs... can still manually specify this if needed.
-        if value > 2**31 -1 or value < -(2**31):
+        if value > 2 ** 31 - 1 or value < -(2 ** 31):
             self.type = '--el'
         else:
             self.type = '--ei'
@@ -67,7 +69,8 @@ class Extra(object):
 
 
 class Intent(object):
-    def __init__(self, activity='land.erikblok.infosamplerservice/.EnvironmentSampler', action=None, uri=None,
+    def __init__(self, activity: str = 'land.erikblok.infosamplerservice/.EnvironmentSampler', action: Actions = None,
+                 uri: str = None,
                  extras: List[Extra] = None):
         if extras is None:
             extras = []
