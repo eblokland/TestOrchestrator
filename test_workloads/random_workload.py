@@ -112,10 +112,9 @@ class RandomWorkload(AbstractWorkload):
         self._read_config(file)
 
     @__init__.register
-    def _init_with_args(self, pause_prob:float, timestep: int, num_classes:int,
+    def _init_with_args(self, pause_prob: float, timestep: int, num_classes: int,
                         csv_file: str = None, aut='land.erikblok.busyworker', runtime: int = None):
         pass
-
 
     def _read_config(self, file: str):
         config = ConfigParser()
@@ -140,10 +139,8 @@ class RandomWorkload(AbstractWorkload):
         intent.send_intent(self.adb)
 
         time.sleep(self.runtime + 1)
-        #ensure worker has been stopped!
+        # ensure worker has been stopped!
         self.get_stop_intent().send_intent(self.adb)
-
-
 
     def post_test(self):
         time.sleep(1)
@@ -161,6 +158,7 @@ class RandomWorkload(AbstractWorkload):
                   Extra(ExtraTypes.INT, NUM_CLASSES, self.num_classes)]
         intent = Intent(activity=PACKAGE, action=Actions.STARTRANDOM, extras=extras)
         return intent
+
 
 if __name__ == "__main__":
     test = InstrumentedTest(RandomWorkload('config.ini'), 'config.ini')
