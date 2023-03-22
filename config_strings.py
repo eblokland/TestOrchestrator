@@ -27,3 +27,7 @@ PKG_NAME = 'pkg_name'
 
 CSV_NAME = 'csv_name'
 CSV_OUTPUT_PATH = 'csv_output_path'
+
+AUT = 'aut'
+COMPILE = 'compile'
+APK_LOC = 'apk_loc'

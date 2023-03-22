@@ -5,7 +5,7 @@ from functools import singledispatchmethod
 from adb_helpers.intent import Intent
 from test_runner.test_runner import InstrumentedTest
 from test_workloads.abstract_workload import AbstractWorkload
-from test_workloads.config_strings import RUNTIME
+from config_strings import RUNTIME
 
 
 class SleepWorkload(AbstractWorkload):

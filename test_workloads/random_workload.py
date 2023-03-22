@@ -9,7 +9,7 @@ from adb_helpers.intent import Intent, Actions, Extra, ExtraTypes
 from test_runner.test_runner import InstrumentedTest
 from test_workloads.abstract_workload import AbstractWorkload
 from adb_helpers.logcat_utils import get_logcat_for_aut
-from test_workloads.config_strings import *
+from config_strings import *
 
 PACKAGE = 'land.erikblok.busyworker/.BusyWorkerService'
 

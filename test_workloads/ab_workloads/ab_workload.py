@@ -11,7 +11,7 @@ from adb_helpers.intent import Extra, Intent
 from adb_helpers.logcat_utils import get_logcat_for_aut, split_logcat, filter_logcat_str_for_tags
 from test_workloads.ab_workloads.ab_workload_strings import AB_LOGCAT_TAG
 from test_workloads.abstract_workload import AbstractWorkload
-from test_workloads.config_strings import *
+from config_strings import *
 
 PACKAGE = 'land.erikblok.busyworker/.BusyWorkerService'
 

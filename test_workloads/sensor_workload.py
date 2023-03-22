@@ -1,7 +1,5 @@
-import string
 import time
 from configparser import ConfigParser
-from enum import Enum
 from functools import singledispatchmethod
 from typing import Dict, Union
 
@@ -11,7 +9,7 @@ from adb_helpers.actions import Actions
 from adb_helpers.intent import Extra, Intent
 from test_runner.test_runner import InstrumentedTest
 from test_workloads.abstract_workload import AbstractWorkload
-from test_workloads.config_strings import *
+from config_strings import *
 
 sensor_types: Dict[str, int] = {'accelerometer': 1}
 

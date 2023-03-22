@@ -8,7 +8,7 @@ from adb_helpers.actions import Actions
 from adb_helpers.intent import Intent, Extra
 from test_runner.test_runner import InstrumentedTest
 from test_workloads.abstract_workload import AbstractWorkload
-from test_workloads.config_strings import *
+from config_strings import *
 
 PACKAGE = 'land.erikblok.busyworker/.BusyWorkerService'
 ACTION = 'land.erikblok.action.START_BLUETOOTH'

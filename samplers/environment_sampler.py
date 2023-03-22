@@ -1,6 +1,7 @@
 import os
 import time
 from configparser import ConfigParser
+from functools import singledispatchmethod
 
 from simpleperf_utils import AdbHelper
 
@@ -8,7 +9,18 @@ from adb_helpers.intent import Intent, Actions
 
 
 class EnvironmentSampler(object):
-    def __init__(self, cfg: ConfigParser):
+    @singledispatchmethod
+    def __init__(self, arg):
+        raise TypeError(f'Unknown arg type {type(arg)}')
+
+    @__init__.register
+    def _init_from_file(self, cfg: str):
+        parser = ConfigParser()
+        parser.read(cfg)
+        self._init_from_parser(parser)
+
+    @__init__.register
+    def _init_from_parser(self, cfg: ConfigParser):
         self.adbhelper = AdbHelper(enable_switch_to_root=False)
         config = cfg['CONFIG']
         samplercfg = cfg['SAMPLER']
