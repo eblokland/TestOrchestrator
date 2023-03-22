@@ -11,20 +11,11 @@ from adb_helpers.actions import Actions
 from adb_helpers.intent import Extra, Intent
 from test_runner.test_runner import InstrumentedTest
 from test_workloads.abstract_workload import AbstractWorkload
-
+from test_workloads.config_strings import *
 
 sensor_types: Dict[str, int] = {'accelerometer': 1}
 
 PACKAGE = 'land.erikblok.busyworker/.BusyWorkerService'
-
-
-SAMP_RATE_HZ = "sample_rate_hz"
-WORK_RATE_HZ = "work_rate_hz"
-SENSOR_TYPE = "sensor_type"
-USE_WAKEUP = "use_wakeup"
-RUNTIME = "runtime"
-WORK_AMOUNT = "work_amount"
-
 
 
 class SensorWorkload(AbstractWorkload):
@@ -42,19 +33,23 @@ class SensorWorkload(AbstractWorkload):
         cfg = ConfigParser()
         cfg.read(file)
         sensor_cfg = cfg['SENSORS']
-        sensor_type_str = sensor_cfg.get('sensor_type').lower()
+        sensor_type_str = sensor_cfg.get(SENSOR_TYPE).lower()
         if not sensor_type_str in sensor_types:
             raise ValueError(f'unknown sensor type string {sensor_type_str}')
         self.sensor_type: int = sensor_types[sensor_type_str]
-        self.use_wakeup: bool = sensor_cfg.getboolean('use_wakeup')
-        self.work_rate_hz: int = sensor_cfg.getint('work_rate_hz')
-        self.samp_rate_hz: int = sensor_cfg.getint('samp_rate_hz')
+        self.use_wakeup: bool = sensor_cfg.getboolean(USE_WAKEUP)
+        self.work_rate_hz: int = sensor_cfg.getint(WORK_RATE_HZ)
+        self.samp_rate_hz: int = sensor_cfg.getint(SAMP_RATE_HZ)
 
-        self.work_amount: Union[int, None] = sensor_cfg.getint('work_amount')
-        self.runtime_secs: int = sensor_cfg.getint('runtime')
+        self.work_amount: Union[int, None] = sensor_cfg.getint(WORK_AMOUNT)
+        self.runtime_secs: int = sensor_cfg.getint(RUNTIME)
+        self.short_runtime: int = sensor_cfg.gentint(WARMUP_RUNTIME)
 
-
-
+    def warmup_workload(self):
+        intent = self.get_start_intent()
+        intent.send_intent(self.adb)
+        time.sleep(self.short_runtime)
+        self.get_stop_intent().send_intent(self.adb)
 
     def pre_test(self):
         pass

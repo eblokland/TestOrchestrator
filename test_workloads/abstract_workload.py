@@ -13,6 +13,10 @@ class AbstractWorkload(ABC):
         pass
 
     @abstractmethod
+    def warmup_workload(self):
+        pass
+
+    @abstractmethod
     def test_workload(self):
         pass
 

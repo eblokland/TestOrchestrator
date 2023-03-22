@@ -16,6 +16,9 @@ class MIMWorkload(ABWorkload):
     def get_start_intent(self) -> Intent:
         return self._get_start_intent(action=Actions.START_MIM)
 
+    def get_short_start_intent(self) -> Intent:
+        return self._get_short_start_intent(action=Actions.START_MIM)
+
 
 if __name__ == "__main__":
     test = InstrumentedTest(MIMWorkload('/Users/erikbl/PycharmProjects/TestOrchestrator/config.ini'), '/Users/erikbl/PycharmProjects/TestOrchestrator/config.ini')

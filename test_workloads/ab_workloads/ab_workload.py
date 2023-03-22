@@ -9,9 +9,9 @@ from simpleperf_utils import AdbHelper
 from adb_helpers.actions import Actions
 from adb_helpers.intent import Extra, Intent
 from adb_helpers.logcat_utils import get_logcat_for_aut, split_logcat, filter_logcat_str_for_tags
-from test_workloads.ab_workloads.ab_workload_strings import WORK_AMOUNT, USE_FIXED, USE_AS_RUNTIME, AB_LOGCAT_TAG, \
-    OUTER_LOOP_ITERATIONS
+from test_workloads.ab_workloads.ab_workload_strings import AB_LOGCAT_TAG
 from test_workloads.abstract_workload import AbstractWorkload
+from test_workloads.config_strings import *
 
 PACKAGE = 'land.erikblok.busyworker/.BusyWorkerService'
 
@@ -42,6 +42,13 @@ class ABWorkload(AbstractWorkload):
         intent.send_intent(self.adb)
         sleep(seconds + 1)
 
+    def warmup_workload(self):
+        seconds = self.short_work_amount / 1000 if self.use_as_runtime else self.short_time_guess
+        intent = self.get_short_start_intent()
+        intent.send_intent(self.adb)
+        sleep(seconds)
+
+
     @abstractmethod
     def _read_file_concrete(self, file: str):
         pass
@@ -54,11 +61,15 @@ class ABWorkload(AbstractWorkload):
         if serial_no is not None:
             self.adb.serial_number = serial_no
         mim_conf = config[cfg_section]
-        self.work_amount = mim_conf.getint('work_amount')
-        self.use_as_runtime = mim_conf.getboolean('use_as_runtime')
-        self.use_fixed = mim_conf.getboolean('use_fixed')
-        self.outer_loop_iterations = mim_conf.getint('outer_loop_iterations')
-        self.time_guess = mim_conf.getint('time_guess')
+        self.work_amount = mim_conf.getint(WORK_AMOUNT)
+        self.short_work_amount = mim_conf.getint(SHORT_WORK_AMOUNT)
+        self.use_as_runtime = mim_conf.getboolean(USE_AS_RUNTIME)
+        self.use_fixed = mim_conf.getboolean(USE_FIXED)
+        self.outer_loop_iterations = mim_conf.getint(OUTER_LOOP_ITERATIONS)
+        self.time_guess = mim_conf.getint(TIME_GUESS)
+        self.short_time_guess = mim_conf.getint(SHORT_TIME_GUESS)
+        if self.short_time_guess is None:
+            self.short_time_guess = 1
         if self.time_guess is None:
             self.time_guess = 2
         if self.work_amount is None or self.use_fixed is None or self.use_as_runtime is None:
@@ -77,12 +88,28 @@ class ABWorkload(AbstractWorkload):
             extras=extras
         )
 
+    def _get_short_start_intent(self, action: Actions):
+        extras = [
+            Extra(self.short_work_amount, WORK_AMOUNT),
+            Extra(self.use_fixed, USE_FIXED),
+            Extra(self.use_as_runtime, USE_AS_RUNTIME)
+        ]
+        return Intent(
+            activity=PACKAGE,
+            action=action,
+            extras=extras,
+        )
+
     def post_test(self):
         if not self.use_as_runtime:
             print(f'end time = {self.get_stop_time()}')
 
     @abstractmethod
     def get_start_intent(self) -> Intent:
+        pass
+
+    @abstractmethod
+    def get_short_start_intent(self) -> Intent:
         pass
 
     def get_stop_intent(self) -> Intent:

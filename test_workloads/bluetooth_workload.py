@@ -8,17 +8,19 @@ from adb_helpers.actions import Actions
 from adb_helpers.intent import Intent, Extra
 from test_runner.test_runner import InstrumentedTest
 from test_workloads.abstract_workload import AbstractWorkload
+from test_workloads.config_strings import *
 
 PACKAGE = 'land.erikblok.busyworker/.BusyWorkerService'
 ACTION = 'land.erikblok.action.START_BLUETOOTH'
 
-SCAN_PERIOD_MILLIS = "scan_period_millis"
-SCAN_ACTIVE_MILLIS = "scan_active_millis"
-RUNTIME = "runtime"
-TIMESTEP = "timestep"
-SLEEP_PROB = "sleep_prob"
-NUM_THREADS = "num_threads"
-TEST_RUNTIME = 'test_runtime'
+#SCAN_PERIOD_MILLIS = "scan_period_millis"
+#SCAN_ACTIVE_MILLIS = "scan_active_millis"
+#RUNTIME = "runtime"
+#TIMESTEP = "timestep"
+#SLEEP_PROB = "sleep_prob"
+#NUM_THREADS = "num_threads"
+#TEST_RUNTIME = 'test_runtime'
+#SHORT_RUNTIME = 'warmup_runtime'
 
 
 class BluetoothWorkload(AbstractWorkload):
@@ -36,13 +38,14 @@ class BluetoothWorkload(AbstractWorkload):
         self.scan_period_millis: int = blue_conf.getint(SCAN_PERIOD_MILLIS)
         self.scan_active_millis: int = blue_conf.getint(SCAN_ACTIVE_MILLIS)
         self.runtime: int = blue_conf.getint(RUNTIME)
-        self.test_runtime: int = blue_conf.getint(TEST_RUNTIME)
+       # self.test_runtime: int = blue_conf.getint(RUNTIME)
+        self.short_runtime: int = blue_conf.getint(WARMUP_RUNTIME)
         self.timestep: int = blue_conf.getint(TIMESTEP)
         self.sleep_prob: float = blue_conf.getfloat(SLEEP_PROB)
         self.num_threads: int = blue_conf.getint(NUM_THREADS)
 
         if (
-                self.runtime is None and self.test_runtime is None) or self.scan_active_millis is None or self.scan_period_millis is None:
+                self.runtime is None) or self.scan_active_millis is None or self.scan_period_millis is None:
             raise ValueError(f'Missing at least one mandatory config option')
 
     @__init__.register
@@ -59,10 +62,17 @@ class BluetoothWorkload(AbstractWorkload):
     def pre_test(self):
         pass
 
+    def warmup_workload(self):
+        intent = self.get_start_intent()
+        intent.remove_extra(RUNTIME)
+        intent.send_intent()
+        time.sleep(self.short_runtime)
+        self.get_stop_intent().send_intent(self.adb)
+
     def test_workload(self):
         intent = self.get_start_intent()
         intent.send_intent(self.adb)
-        time.sleep(self.test_runtime + 1)
+        time.sleep(self.runtime + 1)
         self.get_stop_intent().send_intent(self.adb)
 
     def post_test(self):
@@ -78,7 +88,7 @@ class BluetoothWorkload(AbstractWorkload):
             if value is not None:
                 extras.append(Extra(value, key))
 
-        append_not_none(self.runtime, RUNTIME)
+       # append_not_none(self.runtime, RUNTIME)
         append_not_none(self.timestep, TIMESTEP)
         append_not_none(self.num_threads, NUM_THREADS)
         append_not_none(self.sleep_prob, SLEEP_PROB)

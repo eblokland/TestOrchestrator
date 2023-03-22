@@ -19,3 +19,6 @@ class InternalSetterWorkload(ABWorkload):
 
     def get_start_intent(self) -> Intent:
         return self._get_start_intent(action=Actions.START_IS)
+
+    def get_short_start_intent(self) -> Intent:
+        return self._get_short_start_intent(action=Actions.START_IS)

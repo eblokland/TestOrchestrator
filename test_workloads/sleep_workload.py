@@ -5,6 +5,7 @@ from functools import singledispatchmethod
 from adb_helpers.intent import Intent
 from test_runner.test_runner import InstrumentedTest
 from test_workloads.abstract_workload import AbstractWorkload
+from test_workloads.config_strings import RUNTIME
 
 
 class SleepWorkload(AbstractWorkload):
@@ -18,7 +19,7 @@ class SleepWorkload(AbstractWorkload):
         cfg = ConfigParser()
         cfg.read(filename)
         conf = cfg['SLEEP']
-        self.sleep_time = conf.getfloat('runtime')
+        self.sleep_time = conf.getfloat(RUNTIME)
 
     def pre_test(self):
         pass

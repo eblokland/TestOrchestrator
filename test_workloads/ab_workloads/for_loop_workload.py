@@ -14,6 +14,9 @@ class ForLoopWorkload(ABWorkload):
     def get_start_intent(self) -> Intent:
         return self._get_start_intent(action=Actions.START_FORLOOP)
 
+    def get_short_start_intent(self) -> Intent:
+        return self._get_short_start_intent(action=Actions.START_FORLOOP)
+
 
 if __name__ == "__main__":
     test = InstrumentedTest(ForLoopWorkload('/Users/erikbl/PycharmProjects/TestOrchestrator/config.ini'),

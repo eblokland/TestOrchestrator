@@ -3,7 +3,7 @@ intent.py: Helper functions to create Intents for am start-server
 """
 from enum import Enum, auto
 from functools import singledispatchmethod
-from typing import List
+from typing import List, Any, Dict
 
 from simpleperf_utils import AdbHelper
 
@@ -68,12 +68,12 @@ class Extra(object):
         return self.type + ' ' + str(self.key) + ' ' + str(self.value)
 
 
+
+
 class Intent(object):
     def __init__(self, activity: str = 'land.erikblok.infosamplerservice/.EnvironmentSampler', action: Actions = None,
                  uri: str = None,
                  extras: List[Extra] = None):
-        if extras is None:
-            extras = []
         self.activity = activity
         if action is None or isinstance(action, str):
             self.action = action
@@ -82,7 +82,10 @@ class Intent(object):
         else:
             raise ValueError(f'invalid input for action, got {type(action)}')
         self.uri = uri
-        self.extras = extras
+        self._extras: Dict[Any, Extra] = {}
+        if extras is not None:
+            for extra in extras:
+                self._extras[extra.key] = extra
 
     def add_extras(self, extras: List[Extra]):
         for extra in extras:
@@ -90,9 +93,21 @@ class Intent(object):
 
     def add_extra(self, extra: Extra):
         if isinstance(extra, Extra):
-            self.extras += extra
+            if extra.key in self._extras:
+                raise KeyError(f'{extra.key} already in dict!')
+            self._extras[extra.key] = extra
         else:
-            raise Exception('argument not extra')
+            raise TypeError('argument not extra')
+
+    def set_extra(self, extra: Extra):
+        if isinstance(extra, Extra):
+            self._extras[extra.key] = extra
+        else:
+            raise TypeError('argument not extra')
+
+    def remove_extra(self, key):
+        if key in self._extras:
+            self._extras.pop(key)
 
     def set_action(self, action: Actions):
         if not isinstance(action, Actions):
@@ -110,8 +125,8 @@ class Intent(object):
         if self.uri:
             cmd_str += ' '
             cmd_str += '-d "' + self.uri + '"'
-        if self.extras:
-            for e in self.extras:
+        if self._extras:
+            for e in self._extras.values():
                 if isinstance(e, Extra):
                     cmd_str += ' '
                     cmd_str += e.get_str()

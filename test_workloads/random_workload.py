@@ -9,15 +9,17 @@ from adb_helpers.intent import Intent, Actions, Extra, ExtraTypes
 from test_runner.test_runner import InstrumentedTest
 from test_workloads.abstract_workload import AbstractWorkload
 from adb_helpers.logcat_utils import get_logcat_for_aut
+from test_workloads.config_strings import *
 
 PACKAGE = 'land.erikblok.busyworker/.BusyWorkerService'
 
-TIMESTEP = "timestep"
-RUNTIME = "runtime"
-SLEEP_PROB = "sleep_prob"
-NUM_THREADS = "num_threads"
-WORKER_ID = "worker_id"
-NUM_CLASSES = "num_classes"
+#TIMESTEP = "timestep"
+#RUNTIME = "runtime"
+#SLEEP_PROB = "sleep_prob"
+#NUM_THREADS = "num_threads"
+#WORKER_ID = "worker_id"
+#NUM_CLASSES = "num_classes"
+
 
 workload_runtime_csv_header = ['Classname', 'Runtime (ns)', 'proportion of total', 'proportion of active']
 
@@ -124,9 +126,10 @@ class RandomWorkload(AbstractWorkload):
         self.aut = rand_conf.get('pkg_name')
 
         self.runtime = rand_conf.getint('runtime')
-        self.pause_prob = rand_conf.getfloat('pause_prob')
-        self.timestep = rand_conf.getint('timestep')
-        self.num_classes = rand_conf.getint('num_classes')
+        self.warmup_runtime = rand_conf.getint(WARMUP_RUNTIME)
+        self.pause_prob = rand_conf.getfloat(SLEEP_PROB)
+        self.timestep = rand_conf.getint(TIMESTEP)
+        self.num_classes = rand_conf.getint(NUM_CLASSES)
         if self.runtime is None or self.pause_prob is None \
                 or self.timestep is None or self.num_classes is None:
             raise ValueError('Invalid config file!')
@@ -138,8 +141,9 @@ class RandomWorkload(AbstractWorkload):
         intent = self.get_start_intent()
         intent.send_intent(self.adb)
 
-        time.sleep(self.runtime + 1)
+        time.sleep(self.runtime)
         # ensure worker has been stopped!
+        # never mind, this will always stop it
         self.get_stop_intent().send_intent(self.adb)
 
     def post_test(self):
@@ -153,11 +157,18 @@ class RandomWorkload(AbstractWorkload):
 
     def get_start_intent(self) -> Intent:
         extras = [Extra(ExtraTypes.INT, TIMESTEP, self.timestep),
-                  Extra(ExtraTypes.INT, RUNTIME, self.runtime),
+                 # Extra(ExtraTypes.INT, RUNTIME, self.runtime),
                   Extra(ExtraTypes.FLOAT, SLEEP_PROB, self.pause_prob),
                   Extra(ExtraTypes.INT, NUM_CLASSES, self.num_classes)]
         intent = Intent(activity=PACKAGE, action=Actions.STARTRANDOM, extras=extras)
         return intent
+
+    def warmup_workload(self):
+        intent = self.get_start_intent()
+        intent.send_intent(self.adb)
+        time.sleep(self.warmup_runtime)
+        self.get_stop_intent().send_intent(self.adb)
+
 
 
 if __name__ == "__main__":
