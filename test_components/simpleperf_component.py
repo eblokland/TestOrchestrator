@@ -10,7 +10,8 @@ from test_components.test_component import TestComponent
 
 class SimpleperfComponent(TestComponent):
     def __init__(self, config_file: str):
-        self.sp_args = SimpleperfCommand(config_file)
+        self.sp_cmd = SimpleperfCommand(config_file)
+        self.sp_args = self.sp_cmd.build_simpleperf_obj()
         self.profiler = AppProfiler(self.sp_args)
         self._read_config(config_file)
 
@@ -29,6 +30,8 @@ class SimpleperfComponent(TestComponent):
 
     def post_test_fun(self):
         self.profiler.collect_profiling_data()
+        self._build_bincache(self.sp_args.perf_data_path)
+
 
 
     def test_fun(self):
@@ -37,7 +40,6 @@ class SimpleperfComponent(TestComponent):
 
     def shutdown_fun(self):
         self.profiler.stop_profiling()
-        self._build_bincache(self.sp_args.perf_data_path)
 
     def _build_bincache(self, perf_data_path, symfspaths=None):
         # binary cache doesn't support custom directories... just change pwd instead.

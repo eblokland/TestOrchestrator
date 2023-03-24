@@ -140,4 +140,5 @@ class Intent(object):
     def send_intent(self, adb: AdbHelper = None):
         if adb is None:
             adb = AdbHelper()
+        print(f'Sending: {self.get_args()}')
         return adb.run(adb_args=['shell'] + self.get_args(), log_output=True, log_stderr=True)

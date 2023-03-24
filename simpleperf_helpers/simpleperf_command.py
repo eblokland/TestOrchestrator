@@ -16,7 +16,7 @@ class SimpleperfCommand(object):
             raise ValueError('File not found, will not try to parse as command either')
         cfg = ConfigParser()
         cfg.read(string)
-        self._init_from_cfg(self, cfg)
+        self._init_from_cfg(cfg)
 
     @__init__.register(ConfigParser)
     def _init_from_cfg(self, cfg: ConfigParser):

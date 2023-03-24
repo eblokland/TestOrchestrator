@@ -1,5 +1,6 @@
 from functools import singledispatchmethod
-from typing import Optional, Callable, List
+from typing import Optional, List, Any
+from collections.abc import Callable
 
 from test_components.test_component import TestComponent
 from test_workloads.abstract_workload import AbstractWorkload
@@ -14,15 +15,15 @@ class BuildableTest(object):
         self._post_test_funs = []
 
     @singledispatchmethod
-    def _add_fun(self, arg, fun_list: List[Callable]):
+    def _add_fun(self, arg, fun_list):
         raise TypeError(f'type {type(arg)} not supported')
 
-    @_add_fun.register
-    def _add_single_fun(self, new_fun: Callable, fun_list: List[Callable]):
+    @_add_fun.register(Callable)
+    def _add_single_fun(self, new_fun, fun_list):
         fun_list.append(new_fun)
 
-    @_add_fun.register
-    def _add_funs(self, new_funs: List, fun_list):
+    @_add_fun.register(list)
+    def _add_funs(self, new_funs, fun_list):
         for fun in new_funs:
             self._add_fun(fun, fun_list)
 

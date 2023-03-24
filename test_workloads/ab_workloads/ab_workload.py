@@ -7,6 +7,7 @@ from typing import Union
 from simpleperf_utils import AdbHelper
 
 from adb_helpers.actions import Actions
+from adb_helpers.commands import kill_app
 from adb_helpers.intent import Extra, Intent
 from adb_helpers.logcat_utils import get_logcat_for_aut, split_logcat, filter_logcat_str_for_tags
 from test_workloads.ab_workloads.ab_workload_strings import AB_LOGCAT_TAG
@@ -41,12 +42,16 @@ class ABWorkload(AbstractWorkload):
         intent = self.get_start_intent()
         intent.send_intent(self.adb)
         sleep(seconds + 1)
+        self.get_stop_intent().send_intent(self.adb)
 
     def warmup_workload(self):
         seconds = self.short_work_amount / 1000 if self.use_as_runtime else self.short_time_guess
         intent = self.get_short_start_intent()
         intent.send_intent(self.adb)
         sleep(seconds)
+        self.get_stop_intent().send_intent(self.adb)
+        print(f'Sleeping to allow JIT to compile')
+        sleep(2)
 
 
     @abstractmethod
