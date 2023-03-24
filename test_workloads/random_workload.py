@@ -116,7 +116,12 @@ class RandomWorkload(AbstractWorkload):
     @__init__.register
     def _init_with_args(self, pause_prob: float, timestep: int, num_classes: int,
                         csv_file: str = None, aut='land.erikblok.busyworker', runtime: int = None):
-        pass
+        self.pause_prob = pause_prob
+        self.timestep = timestep
+        self.num_classes = num_classes
+        self.aut = aut
+        self.runtime = runtime
+        self.adb = AdbHelper(enable_switch_to_root=False)
 
     def _read_config(self, file: str):
         config = ConfigParser()
@@ -148,7 +153,7 @@ class RandomWorkload(AbstractWorkload):
         self.get_stop_intent().send_intent(self.adb)
 
     def loop_post_test(self):
-        time.sleep(1)
+        time.sleep(2)
         logcat_str = get_logcat_for_aut(self.aut, self.adb)
         if logcat_str is None:
             return
@@ -171,6 +176,9 @@ class RandomWorkload(AbstractWorkload):
         intent.send_intent(self.adb)
         time.sleep(self.warmup_runtime)
         self.get_stop_intent().send_intent(self.adb)
+
+    def post_test(self):
+        pass
 
 
 
