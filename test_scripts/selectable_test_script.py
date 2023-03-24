@@ -32,10 +32,10 @@ def get_wl_for_string(test_str: str, config_loc: str) -> AbstractWorkload:
         return MIMWorkload(config_loc)
 
 
-def build_test(test_str: str, simpleperf_config: str, sampler_config: str,
+def build_test(test_str: str, iterations: int, simpleperf_config: str, sampler_config: str,
                workload_conf: str, app_prep_conf: str) -> BuildableTest:
     workload = get_wl_for_string(test_str, workload_conf)
-    test = BuildableTest(workload=workload). \
+    test = BuildableTest(workload=workload, iterations=iterations). \
         add_test_component(EnvironmentSamplerComponent(sampler_config)) \
         .add_test_component(SimpleperfComponent(simpleperf_config)) \
         .add_test_component(AppPrepComponent(app_prep_conf))
@@ -43,13 +43,16 @@ def build_test(test_str: str, simpleperf_config: str, sampler_config: str,
     return test
 
 
-def build_test_single_conf(test_str: str, conf: str):
-    return build_test(test_str, conf, conf, conf, conf)
+def build_test_single_conf(test_str: str, conf: str, iterations: int):
+    return build_test(test_str, iterations, conf, conf, conf, conf)
 
 
 if __name__ == "__main__":
     args = sys.argv[1:]
     test_str = args[0]
     conf_loc = args[1]
-    test = build_test_single_conf(test_str, conf_loc)
+    num_runs = int(args[2])
+    if num_runs is None:
+        num_runs = 1
+    test = build_test_single_conf(test_str, conf_loc, num_runs)
     test.runtest()

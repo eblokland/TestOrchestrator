@@ -7,12 +7,15 @@ from test_workloads.abstract_workload import AbstractWorkload
 
 
 class BuildableTest(object):
-    def __init__(self, workload: Optional[AbstractWorkload]):
+    def __init__(self, workload: Optional[AbstractWorkload], iterations: int = 1):
         self._workload = workload
         self._pre_test_funs = []
         self._test_funs = []
         self._test_shutdown_funs = []
         self._post_test_funs = []
+        self._loop_pre_test_funs = []
+        self._loop_post_test_funs = []
+        self.iterations = iterations
 
     @singledispatchmethod
     def _add_fun(self, arg, fun_list):
@@ -43,6 +46,14 @@ class BuildableTest(object):
         self._add_fun(funs, self._post_test_funs)
         return self
 
+    def add_loop_post_test_fun(self, funs):
+        self._add_fun(funs, self._loop_post_test_funs)
+        return self
+
+    def add_loop_pre_test_fun(self, funs):
+        self._add_fun(funs, self._loop_pre_test_funs)
+        return self
+
     def add_test_component(self, component: TestComponent):
         if not isinstance(component, TestComponent):
             raise TypeError('provided component not instance of TestComponent')
@@ -51,6 +62,8 @@ class BuildableTest(object):
         self.add_post_fun(component.post_test_fun)
         self.add_shutdown_fun(component.shutdown_fun)
         self.add_pre_test_fun(component.pre_test_fun)
+        self.add_loop_pre_test_fun(component.loop_pre_test_fun)
+        self.add_loop_post_test_fun(component.loop_post_test_fun)
         return self
 
     def runtest(self):
@@ -63,18 +76,30 @@ class BuildableTest(object):
         # perform the warmup now, this is a short workload to warm the JIT cache
         self._workload.warmup_workload()
 
-        # start up all test-related services.  they should ensure that they've finished starting.
-        for fun in self._test_funs:
-            fun()
+        for i in range(0, self.iterations):
 
-        # run the test workload.  it will return when it finishes.
-        self._workload.test_workload()
+            for fun in self._loop_pre_test_funs:
+                fun()
 
-        # run test shutdown functions.
-        for fun in self._test_shutdown_funs:
-            fun()
+            self._workload.loop_pre_test()
 
-        # run post-test for workload
+            # start up all test-related services.  they should ensure that they've finished starting.
+            for fun in self._test_funs:
+                fun()
+
+            # run the test workload.  it will return when it finishes.
+            self._workload.test_workload()
+
+            # run test shutdown functions.
+            for fun in self._test_shutdown_funs:
+                fun()
+
+            for fun in self._loop_post_test_funs:
+                fun()
+
+            # run post-test for workload
+            self._workload.loop_post_test()
+
         self._workload.post_test()
 
         # run the rest of the post-test functions

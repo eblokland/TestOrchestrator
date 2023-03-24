@@ -5,16 +5,15 @@ class TestComponent(ABC):
 
     def pre_test_fun(self):
         """
-        Function to be executed prior to the test starting.
+        Function to be executed prior to the test loop starting.
         May be executed long before workload
         :return:
         """
         pass
 
-    def post_test_fun(self):
+    def loop_pre_test_fun(self):
         """
-        Function to be executed after the test ends.  May be executed long after workload exits,
-        should be used for long actions (ex. copy file)
+        Function to be executed before test within test loop.
         :return:
         """
         pass
@@ -34,3 +33,20 @@ class TestComponent(ABC):
         :return:
         """
         pass
+
+    def loop_post_test_fun(self):
+        """
+        Function to be executed after test end, within test loop.
+        :return:
+        """
+        pass
+
+    def post_test_fun(self):
+        """
+        Function to be executed after the test ends.  May be executed long after workload exits,
+        should be used for long actions (ex. copy file)
+        :return:
+        """
+        pass
+
+

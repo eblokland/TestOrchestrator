@@ -122,9 +122,10 @@ class RandomWorkload(AbstractWorkload):
         config = ConfigParser()
         config.read(file)
         rand_conf = config['RANDOM_WORKLOAD']
-        self.csv_file = rand_conf.get('csv_output_path') + rand_conf.get('csv_name') + '.csv'
+        self.csv_folder = rand_conf.get('csv_output_path')
+        self.csv_name = rand_conf.get('csv_name')
         self.aut = rand_conf.get('pkg_name')
-
+        self.loop_counter = 1
         self.runtime = rand_conf.getint('runtime')
         self.warmup_runtime = rand_conf.getint(WARMUP_RUNTIME)
         self.pause_prob = rand_conf.getfloat(SLEEP_PROB)
@@ -146,14 +147,16 @@ class RandomWorkload(AbstractWorkload):
         # never mind, this will always stop it
         self.get_stop_intent().send_intent(self.adb)
 
-    def post_test(self):
+    def loop_post_test(self):
         time.sleep(1)
         logcat_str = get_logcat_for_aut(self.aut, self.adb)
         if logcat_str is None:
             return
 
         (total_time, runtimes) = parse_logcat_string(logcat_str)
-        write_csv(runtimes=runtimes, total_time=total_time, output_file=self.csv_file)
+        csv_file = f'{self.csv_folder}{self.csv_name}-{self.loop_counter}.csv'
+        write_csv(runtimes=runtimes, total_time=total_time, output_file=csv_file)
+        self.loop_counter += 1
 
     def get_start_intent(self) -> Intent:
         extras = [Extra(ExtraTypes.INT, TIMESTEP, self.timestep),
