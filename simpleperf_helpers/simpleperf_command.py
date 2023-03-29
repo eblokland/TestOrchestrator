@@ -75,4 +75,6 @@ class SimpleperfCommand(object):
         if self.trace_offcpu:
             record_opts_string += ' --trace-offcpu '
         newobj.record_options = record_opts_string
+        newobj.log = 'info'
+
         return newobj

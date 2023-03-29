@@ -41,16 +41,17 @@ class SensorWorkload(AbstractWorkload):
 
         self.work_amount: Union[int, None] = sensor_cfg.getint(WORK_AMOUNT)
         self.runtime_secs: int = sensor_cfg.getint(RUNTIME)
-        self.short_runtime: int = sensor_cfg.gentint(WARMUP_RUNTIME)
+        self.short_runtime: int = sensor_cfg.getint(WARMUP_RUNTIME)
+
+
+    def pre_test(self):
+        pass
 
     def warmup_workload(self):
         intent = self.get_start_intent()
         intent.send_intent(self.adb)
         time.sleep(self.short_runtime)
         self.get_stop_intent().send_intent(self.adb)
-
-    def pre_test(self):
-        pass
 
     def test_workload(self):
         intent = self.get_start_intent()
@@ -59,8 +60,6 @@ class SensorWorkload(AbstractWorkload):
         time.sleep(self.runtime_secs + 1)
 
         self.get_stop_intent().send_intent(self.adb)
-
-
 
     def post_test(self):
         pass
@@ -77,6 +76,7 @@ class SensorWorkload(AbstractWorkload):
 
         intent = Intent(activity=PACKAGE, action=Actions.START_SENSOR, extras=extras)
         return intent
+
 
 if __name__ == "__main__":
     test = InstrumentedTest(SensorWorkload('config.ini'), 'config.ini')

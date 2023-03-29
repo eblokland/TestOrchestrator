@@ -67,7 +67,6 @@ class BuildableTest(object):
         return self
 
     def runtest(self):
-
         # execute all setup functions, these may take time
         for fun in self._pre_test_funs:
             fun()

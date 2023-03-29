@@ -44,8 +44,7 @@ class BluetoothWorkload(AbstractWorkload):
         self.sleep_prob: float = blue_conf.getfloat(SLEEP_PROB)
         self.num_threads: int = blue_conf.getint(NUM_THREADS)
 
-        if (
-                self.runtime is None) or self.scan_active_millis is None or self.scan_period_millis is None:
+        if self.runtime is None or self.scan_active_millis is None or self.scan_period_millis is None:
             raise ValueError(f'Missing at least one mandatory config option')
 
     @__init__.register

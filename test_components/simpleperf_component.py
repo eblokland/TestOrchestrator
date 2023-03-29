@@ -2,7 +2,7 @@ import os
 from configparser import ConfigParser
 from typing import Optional
 
-from app_profiler import AppProfiler
+from simpleperf_helpers.app_profiler import AppProfiler
 from binary_cache_builder import BinaryCacheBuilder
 
 from simpleperf_helpers.simpleperf_command import SimpleperfCommand
@@ -26,6 +26,9 @@ class SimpleperfComponent(TestComponent):
         self.ndk_path = conf.get('ndkpath')
         self.disable_root = conf.getboolean('disable_root')
         self.device_serial = conf.get('adb_serial')
+        self.out_file_name = conf.get('outfilename')
+        sp_conf = cfg['SIMPLEPERF']
+        self.output_dir = sp_conf.get('simpleperfoutputpath')
 
     def pre_test_fun(self):
         # this does some one-time setup, like copying the simpleperf bin
@@ -42,7 +45,11 @@ class SimpleperfComponent(TestComponent):
         self.profiler.start()
 
     def shutdown_fun(self):
-        self.profiler.stop_profiling()
+        lines = self.profiler.stop_profiling()
+        file_path = self.output_dir + self.out_file_name + f'-{self.iteration}_logs.txt'
+
+        with open(file=file_path, mode='w') as log_file:
+            log_file.writelines(lines)
 
     def loop_post_test_fun(self):
         self.profiler.collect_profiling_data()
