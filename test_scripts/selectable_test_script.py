@@ -3,6 +3,7 @@ import sys
 from test_components.app_prep_component import AppPrepComponent
 from test_components.environment_sampler_component import EnvironmentSamplerComponent
 from test_components.simpleperf_component import SimpleperfComponent
+from test_components.simpleperf_disconnected_component import SimpleperfDisconnectedComponent
 from test_runner.buildable_test_runner import BuildableTest
 from test_workloads.ab_workloads.for_loop_workload import ForLoopWorkload
 from test_workloads.ab_workloads.is_workload import ISWorkload
@@ -37,8 +38,9 @@ def build_test(test_str: str, iterations: int, simpleperf_config: str, sampler_c
     workload = get_wl_for_string(test_str, workload_conf)
     test = BuildableTest(workload=workload, iterations=iterations). \
         add_test_component(EnvironmentSamplerComponent(sampler_config)) \
-        .add_test_component(SimpleperfComponent(simpleperf_config)) \
-        .add_test_component(AppPrepComponent(app_prep_conf))
+        .add_test_component(SimpleperfDisconnectedComponent(simpleperf_config)) \
+        .add_test_component(AppPrepComponent(app_prep_conf)) \
+        .set_disconnect_adb(True, '172.17.125.82')
 
     return test
 

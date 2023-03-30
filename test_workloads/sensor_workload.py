@@ -53,12 +53,14 @@ class SensorWorkload(AbstractWorkload):
         time.sleep(self.short_runtime)
         self.get_stop_intent().send_intent(self.adb)
 
-    def test_workload(self):
+    def start_test(self):
         intent = self.get_start_intent()
         intent.send_intent(self.adb)
 
+    def wait_for_test(self):
         time.sleep(self.runtime_secs + 1)
 
+    def stop_test(self):
         self.get_stop_intent().send_intent(self.adb)
 
     def post_test(self):

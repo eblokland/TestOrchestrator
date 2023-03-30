@@ -35,12 +35,22 @@ class AbstractWorkload(ABC):
         pass
 
     @abstractmethod
-    def test_workload(self):
+    def start_test(self):
+        pass
+
+
+    @abstractmethod
+    def wait_for_test(self):
         """
-        Primary test workload.  Should start workload, block until finished, and confirm workload is stopped somehow.
+        Primary test workload.  Does not do anything aside from block until finished.  Needs to assume
+        that there is NO active adb connection, and will open this if needed.
         Mandatory to implement
         :return:
         """
+        pass
+
+    @abstractmethod
+    def stop_test(self):
         pass
 
     def loop_post_test(self):

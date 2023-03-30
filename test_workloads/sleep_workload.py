@@ -24,8 +24,14 @@ class SleepWorkload(AbstractWorkload):
     def pre_test(self):
         pass
 
-    def test_workload(self):
+    def start_test(self):
+        pass
+
+    def wait_for_test(self):
         time.sleep(self.sleep_time)
+
+    def stop_test(self):
+        pass
 
     def post_test(self):
         pass

@@ -1,9 +1,13 @@
 from functools import singledispatchmethod
+from time import sleep
 from typing import Optional, List, Any
 from collections.abc import Callable
 
 from test_components.test_component import TestComponent
 from test_workloads.abstract_workload import AbstractWorkload
+from device import AndroidDevice, get_device
+
+import device
 
 
 class BuildableTest(object):
@@ -16,7 +20,11 @@ class BuildableTest(object):
         self._loop_pre_test_funs = []
         self._loop_post_test_funs = []
         self.iterations = iterations
+        self._disconnect_adb: bool = False
+        self._wireless_adb_ip: Optional[str] = None
+        self._device: Optional[AndroidDevice] = None
 
+# region BUILDER_METHODS
     @singledispatchmethod
     def _add_fun(self, arg, fun_list):
         raise TypeError(f'type {type(arg)} not supported')
@@ -66,6 +74,15 @@ class BuildableTest(object):
         self.add_loop_post_test_fun(component.loop_post_test_fun)
         return self
 
+    def set_disconnect_adb(self, disconnect_adb: bool, wireless_adb_ip: Optional[str] = None):
+        if not disconnect_adb and wireless_adb_ip is None:
+            raise ValueError('When using disconnecting ADB, we need an IP to connect back to.')
+        self._disconnect_adb = disconnect_adb
+        self._wireless_adb_ip = wireless_adb_ip
+        self._device = AndroidDevice(serial=self._wireless_adb_ip) if self._disconnect_adb else None
+        return self
+#endregion
+
     def runtest(self):
         # execute all setup functions, these may take time
         for fun in self._pre_test_funs:
@@ -86,8 +103,17 @@ class BuildableTest(object):
             for fun in self._test_funs:
                 fun()
 
+            self._workload.start_test()
             # run the test workload.  it will return when it finishes.
-            self._workload.test_workload()
+            if self._device and self._wireless_adb_ip:
+                self._device.disconnect(self._wireless_adb_ip)
+                print(f'hopefully disconnected')
+            self._workload.wait_for_test()
+            if self._device and self._wireless_adb_ip:
+                print(self._device.connect(self._wireless_adb_ip))
+
+
+            self._workload.stop_test()
 
             # run test shutdown functions.
             for fun in self._test_shutdown_funs:

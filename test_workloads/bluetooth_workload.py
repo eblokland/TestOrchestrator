@@ -49,7 +49,7 @@ class BluetoothWorkload(AbstractWorkload):
 
     @__init__.register
     def _init_from_args(self, scan_period_millis: int, scan_active_millis: int, runtime: int = 0, timestep: int = 100,
-                        sleep_prob: float = 0.0, num_threads: int = 0):
+                        sleep_prob: float = 0.0, num_threads: int = 0, dc_adb: bool = False):
         self.adb = AdbHelper()
         self.scan_period_millis: int = scan_period_millis
         self.scan_active_millis: int = scan_active_millis
@@ -68,10 +68,14 @@ class BluetoothWorkload(AbstractWorkload):
         time.sleep(self.short_runtime)
         self.get_stop_intent().send_intent(self.adb)
 
-    def test_workload(self):
+    def start_test(self):
         intent = self.get_start_intent()
         intent.send_intent(self.adb)
+
+    def wait_for_test(self):
         time.sleep(self.runtime + 1)
+
+    def stop_test(self):
         self.get_stop_intent().send_intent(self.adb)
 
     def post_test(self):

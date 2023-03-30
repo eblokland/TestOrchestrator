@@ -45,7 +45,7 @@ class InstrumentedTest(object):
 
         print(adb.run_and_return_output(['shell', 'dumpsys', 'battery', '|', 'grep', '-i', 'charge']))
         profiler.start()
-        self.workload.test_workload()
+        self.workload.wait_for_test()
         print(adb.run_and_return_output(['shell', 'dumpsys', 'battery', '|', 'grep', '-i', 'charge']))
         profiler.stop_profiling()
         samp.stop_file_log()

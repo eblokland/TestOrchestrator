@@ -37,11 +37,15 @@ class ABWorkload(AbstractWorkload):
         self.outer_loop_iterations = outer_loop_iterations
         self.time_guess = time_guess
 
-    def test_workload(self):
-        seconds = self.work_amount / 1000 if self.use_as_runtime else self.time_guess
+    def start_test(self):
         intent = self.get_start_intent()
         intent.send_intent(self.adb)
+
+    def wait_for_test(self):
+        seconds = self.work_amount / 1000 if self.use_as_runtime else self.time_guess
         sleep(seconds + 1)
+
+    def stop_test(self):
         self.get_stop_intent().send_intent(self.adb)
 
     def warmup_workload(self):

@@ -140,14 +140,14 @@ class RandomWorkload(AbstractWorkload):
                 or self.timestep is None or self.num_classes is None:
             raise ValueError('Invalid config file!')
 
-    def pre_test(self):
-        pass
-
-    def test_workload(self):
+    def start_test(self):
         intent = self.get_start_intent()
         intent.send_intent(self.adb)
 
+    def wait_for_test(self):
         time.sleep(self.runtime)
+
+    def stop_test(self):
         # ensure worker has been stopped!
         # never mind, this will always stop it
         self.get_stop_intent().send_intent(self.adb)

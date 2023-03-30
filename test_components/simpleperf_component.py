@@ -2,6 +2,8 @@ import os
 from configparser import ConfigParser
 from typing import Optional
 
+from simpleperf_utils import AdbHelper
+
 from simpleperf_helpers.app_profiler import AppProfiler
 from binary_cache_builder import BinaryCacheBuilder
 
@@ -29,6 +31,7 @@ class SimpleperfComponent(TestComponent):
         self.out_file_name = conf.get('outfilename')
         sp_conf = cfg['SIMPLEPERF']
         self.output_dir = sp_conf.get('simpleperfoutputpath')
+        self.adb = AdbHelper()
 
     def pre_test_fun(self):
         # this does some one-time setup, like copying the simpleperf bin
@@ -39,6 +42,14 @@ class SimpleperfComponent(TestComponent):
         # dirty hack to set the file name to something unique.
         # good thing everything is public in python
         self.profiler.args.perf_data_path = self.perf_data_path + f'-{self.iteration}.data'
+        # ensure that file is deleted on device before starting.
+        # simpleperf is affected by same bug as acropalypse!
+        # fortunately the perf.data parser will correctly exit (i think...)
+        # but the file will be huge.
+        status, output = self.adb.run_and_return_output(
+            ['shell', 'rm', '/data/local/tmp/perf.data']
+        )
+        print(f'deleted data with status {status} and output {output}')
 
     def test_fun(self):
         self.profiler.kill_app_process()
