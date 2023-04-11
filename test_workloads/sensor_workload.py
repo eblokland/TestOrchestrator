@@ -43,7 +43,6 @@ class SensorWorkload(AbstractWorkload):
         self.runtime_secs: int = sensor_cfg.getint(RUNTIME)
         self.short_runtime: int = sensor_cfg.getint(WARMUP_RUNTIME)
 
-
     def pre_test(self):
         pass
 

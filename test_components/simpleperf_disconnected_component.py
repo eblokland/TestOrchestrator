@@ -1,3 +1,5 @@
+import os
+
 from test_components.simpleperf_component import SimpleperfComponent
 from test_components.test_component import TestComponent
 from run_simpleperf_without_usb_connection import stop_recording, start_recording
@@ -29,6 +31,7 @@ class SimpleperfDisconnectedComponent(SimpleperfComponent):
         if not status:
             print(output)
         super()._build_bincache(self.sp_args.perf_data_path)
+        self.iteration += 1
 
     def post_test_fun(self):
         pass
