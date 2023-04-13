@@ -91,6 +91,7 @@ class BuildableTest(object):
 
         # perform the warmup now, this is a short workload to warm the JIT cache
         self._workload.warmup_workload()
+        sleep(120)
 
         for i in range(0, self.iterations):
 
