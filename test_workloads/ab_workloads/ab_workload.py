@@ -10,7 +10,7 @@ from adb_helpers.actions import Actions
 from adb_helpers.commands import kill_app
 from adb_helpers.intent import Extra, Intent
 from adb_helpers.logcat_utils import get_logcat_for_aut, split_logcat, filter_logcat_str_for_tags
-from test_workloads.ab_workloads.ab_workload_strings import AB_LOGCAT_TAG
+from test_workloads.ab_workloads.ab_workload_strings import AB_LOGCAT_TAG, VARIANT
 from test_workloads.abstract_workload import AbstractWorkload
 from config_strings import *
 
@@ -28,10 +28,15 @@ class ABWorkload(AbstractWorkload):
         self._read_file_concrete(file)
 
     @__init__.register
-    def _init_from_args(self, work_amount: int, use_fixed: bool, use_as_runtime: bool = False,
+    def _init_from_args(self, work_amount: int, variant: Union[bool, int], use_as_runtime: bool = False,
                         outer_loop_iterations: int = 1, time_guess: int = 2):
         self.adb = AdbHelper(enable_switch_to_root=False)
-        self.use_fixed = use_fixed
+        if isinstance(variant, bool):
+            self.use_fixed = variant
+            self.variant = None
+        elif isinstance(variant, int):
+            self.variant = variant
+            self.use_fixed = None
         self.work_amount = work_amount
         self.use_as_runtime = use_as_runtime
         self.outer_loop_iterations = outer_loop_iterations
@@ -74,6 +79,7 @@ class ABWorkload(AbstractWorkload):
         self.short_work_amount = mim_conf.getint(SHORT_WORK_AMOUNT)
         self.use_as_runtime = mim_conf.getboolean(USE_AS_RUNTIME)
         self.use_fixed = mim_conf.getboolean(USE_FIXED)
+        self.variant = mim_conf.getint(VARIANT)
         self.outer_loop_iterations = mim_conf.getint(OUTER_LOOP_ITERATIONS)
         self.time_guess = mim_conf.getint(TIME_GUESS)
         self.short_time_guess = mim_conf.getint(SHORT_TIME_GUESS)
@@ -81,12 +87,13 @@ class ABWorkload(AbstractWorkload):
             self.short_time_guess = 1
         if self.time_guess is None:
             self.time_guess = 2
-        if self.work_amount is None or self.use_fixed is None or self.use_as_runtime is None:
+        if self.work_amount is None or (self.use_fixed is None and self.variant is None) or self.use_as_runtime is None:
             raise ValueError('Did not find all values in config file')
 
     def _get_start_intent(self, action: Actions):
+        variant = self.variant if self.variant is not None else (1 if self.use_fixed else 0)
         extras = [Extra(self.work_amount, WORK_AMOUNT),
-                  Extra(self.use_fixed, USE_FIXED),
+                  Extra(variant, VARIANT),
                   Extra(self.use_as_runtime, USE_AS_RUNTIME)]
         if self.outer_loop_iterations is not None:
             extras.append(Extra(self.outer_loop_iterations, OUTER_LOOP_ITERATIONS))
@@ -98,9 +105,10 @@ class ABWorkload(AbstractWorkload):
         )
 
     def _get_short_start_intent(self, action: Actions):
+        variant = self.variant if self.variant is not None else (1 if self.use_fixed else 0)
         extras = [
             Extra(self.short_work_amount, WORK_AMOUNT),
-            Extra(self.use_fixed, USE_FIXED),
+            Extra(variant, VARIANT),
             Extra(self.use_as_runtime, USE_AS_RUNTIME)
         ]
         return Intent(
